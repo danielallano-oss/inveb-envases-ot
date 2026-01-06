@@ -1,0 +1,871 @@
+{
+  "laravel": {
+    "campos": [
+      {
+        "id": "product_type_id",
+        "label": "Tipo item",
+        "name": "product_type_id",
+        "opciones": [
+          {
+            "text": "Caja",
+            "value": "3"
+          },
+          {
+            "text": "Fondo",
+            "value": "4"
+          },
+          {
+            "text": "Tapa",
+            "value": "5"
+          },
+          {
+            "text": "Cuerpo",
+            "value": "6"
+          },
+          {
+            "text": "Cabezal",
+            "value": "8"
+          },
+          {
+            "text": "Interconector",
+            "value": "10"
+          },
+          {
+            "text": "Hoja Rayada",
+            "value": "12"
+          },
+          {
+            "text": "Hoja Sencilla",
+            "value": "13"
+          },
+          {
+            "text": "Panel Perimetral",
+            "value": "15"
+          },
+          {
+            "text": "Plancha",
+            "value": "16"
+          },
+          {
+            "text": "Set  de Tabiques",
+            "value": "18"
+          },
+          {
+            "text": "Tabique largo",
+            "value": "19"
+          },
+          {
+            "text": "Tabique corto",
+            "value": "20"
+          },
+          {
+            "text": "Esquinero",
+            "value": "21"
+          },
+          {
+            "text": "Bandeja",
+            "value": "28"
+          },
+          {
+            "text": "Hoja Troquelada",
+            "value": "32"
+          },
+          {
+            "text": "Tapa Pallet",
+            "value": "34"
+          },
+          {
+            "text": "Bins",
+            "value": "35"
+          },
+          {
+            "text": "Hoja Separadora",
+            "value": "36"
+          }
+        ],
+        "tipo": "select"
+      },
+      {
+        "id": "impresion",
+        "label": "Impresión",
+        "name": "impresion",
+        "opciones": [
+          {
+            "text": "Flexografía",
+            "value": "2"
+          },
+          {
+            "text": "Flexografía Alta Gráfica",
+            "value": "3"
+          },
+          {
+            "text": "Flexografía Tiro y Retiro",
+            "value": "4"
+          },
+          {
+            "text": "Sin Impresión",
+            "value": "5"
+          }
+        ],
+        "tipo": "select"
+      },
+      {
+        "id": "fsc",
+        "label": "FSC",
+        "name": "fsc",
+        "opciones": [
+          {
+            "text": "No",
+            "value": "0"
+          },
+          {
+            "text": "Si",
+            "value": "1"
+          },
+          {
+            "text": "Sin FSC",
+            "value": "2"
+          },
+          {
+            "text": "Logo FSC solo EEII",
+            "value": "3"
+          },
+          {
+            "text": "Logo FSC cliente y EEII",
+            "value": "4"
+          },
+          {
+            "text": "Logo FSC solo cliente",
+            "value": "5"
+          },
+          {
+            "text": "FSC solo facturación",
+            "value": "6"
+          }
+        ],
+        "tipo": "select"
+      },
+      {
+        "id": "cinta",
+        "label": "Cinta",
+        "name": "cinta",
+        "opciones": [
+          {
+            "text": "Si",
+            "value": "1"
+          },
+          {
+            "text": "No",
+            "value": "0"
+          }
+        ],
+        "tipo": "select"
+      },
+      {
+        "id": "coverage_internal_id",
+        "label": "Recubrimiento Interno",
+        "name": "coverage_internal_id",
+        "opciones": [
+          {
+            "text": "No aplica",
+            "value": "1"
+          },
+          {
+            "text": "Barniz hidrorepelente",
+            "value": "2"
+          },
+          {
+            "text": "Cera",
+            "value": "3"
+          }
+        ],
+        "tipo": "select"
+      },
+      {
+        "id": "coverage_external_id",
+        "label": "Recubrimiento Externo",
+        "name": "coverage_external_id",
+        "opciones": [
+          {
+            "text": "No aplica",
+            "value": "1"
+          },
+          {
+            "text": "Barniz hidrorepelente",
+            "value": "2"
+          },
+          {
+            "text": "Barniz acuoso",
+            "value": "3"
+          },
+          {
+            "text": "Barniz UV",
+            "value": "4"
+          },
+          {
+            "text": "Cera",
+            "value": "5"
+          }
+        ],
+        "tipo": "select"
+      },
+      {
+        "id": "planta_id",
+        "label": "Planta Objetivo",
+        "name": "planta_id",
+        "opciones": [
+          {
+            "text": "BUIN",
+            "value": "1"
+          },
+          {
+            "text": "TIL TIL",
+            "value": "2"
+          },
+          {
+            "text": "OSORNO",
+            "value": "3"
+          }
+        ],
+        "tipo": "select"
+      },
+      {
+        "id": "carton_color",
+        "label": "Color Cartón",
+        "name": "carton_color",
+        "opciones": [
+          {
+            "text": "Café",
+            "value": "1"
+          },
+          {
+            "text": "Blanco",
+            "value": "2"
+          }
+        ],
+        "tipo": "select"
+      },
+      {
+        "id": "carton_id",
+        "label": "Cartón",
+        "name": "carton_id",
+        "opciones": [
+          {
+            "text": "EN118W",
+            "value": "7"
+          },
+          {
+            "text": "EN118X",
+            "value": "8"
+          },
+          {
+            "text": "EN70Y",
+            "value": "13"
+          },
+          {
+            "text": "EN75Y",
+            "value": "15"
+          },
+          {
+            "text": "EN75Z",
+            "value": "16"
+          },
+          {
+            "text": "EN79G",
+            "value": "17"
+          },
+          {
+            "text": "EN86F",
+            "value": "19"
+          },
+          {
+            "text": "EN86G",
+            "value": "20"
+          },
+          {
+            "text": "EN94W",
+            "value": "23"
+          },
+          {
+            "text": "EN94X",
+            "value": "24"
+          },
+          {
+            "text": "EN97DWC",
+            "value": "27"
+          },
+          {
+            "text": "EN97DXC",
+            "value": "28"
+          },
+          {
+            "text": "EN98Z",
+            "value": "29"
+          },
+          {
+            "text": "EN7FB",
+            "value": "35"
+          },
+          {
+            "text": "EN7HB",
+            "value": "36"
+          },
+          {
+            "text": "EN7HN",
+            "value": "37"
+          },
+          {
+            "text": "EN9HB",
+            "value": "38"
+          },
+          {
+            "text": "EN9HN",
+            "value": "39"
+          },
+          {
+            "text": "EN100JOG",
+            "value": "49"
+          },
+          {
+            "text": "EN116JOG",
+            "value": "52"
+          },
+          {
+            "text": "EN116JQG",
+            "value": "53"
+          },
+          {
+            "text": "EN32B",
+            "value": "62"
+          },
+          {
+            "text": "EN32L",
+            "value": "63"
+          },
+          {
+            "text": "EN33EE",
+            "value": "65"
+          },
+          {
+            "text": "EN33EL",
+            "value": "66"
+          },
+          {
+            "text": "EN34C",
+            "value": "67"
+          },
+          {
+            "text": "EN34M",
+            "value": "68"
+          },
+          {
+            "text": "EN40B",
+            "value": "70"
+          },
+          {
+            "text": "EN40L",
+            "value": "71"
+          },
+          {
+            "text": "EN42C",
+            "value": "72"
+          },
+          {
+            "text": "EN42L",
+            "value": "73"
+          },
+          {
+            "text": "EN42M",
+            "value": "74"
+          },
+          {
+            "text": "EN44B",
+            "value": "75"
+          },
+          {
+            "text": "EN44L",
+            "value": "76"
+          },
+          {
+            "text": "EN48C",
+            "value": "77"
+          },
+          {
+            "text": "EN48M",
+            "value": "78"
+          },
+          {
+            "text": "EN52L",
+            "value": "79"
+          },
+          {
+            "text": "EN54O",
+            "value": "81"
+          },
+          {
+            "text": "EN55B",
+            "value": "83"
+          },
+          {
+            "text": "EN55C",
+            "value": "84"
+          },
+          {
+            "text": "EN55M",
+            "value": "85"
+          },
+          {
+            "text": "EN56P",
+            "value": "86"
+          },
+          {
+            "text": "EN56S",
+            "value": "87"
+          },
+          {
+            "text": "EN57C",
+            "value": "90"
+          },
+          {
+            "text": "EN58O",
+            "value": "91"
+          },
+          {
+            "text": "EN58Q",
+            "value": "92"
+          },
+          {
+            "text": "EN64C",
+            "value": "95"
+          },
+          {
+            "text": "EN64P",
+            "value": "97"
+          },
+          {
+            "text": "EN64S",
+            "value": "98"
+          },
+          {
+            "text": "EN66Q",
+            "value": "100"
+          },
+          {
+            "text": "EN68C",
+            "value": "101"
+          },
+          {
+            "text": "EN75O",
+            "value": "103"
+          },
+          {
+            "text": "EN75Q",
+            "value": "104"
+          },
+          {
+            "text": "ENIB220",
+            "value": "119"
+          },
+          {
+            "text": "ENIB140",
+            "value": "120"
+          },
+          {
+            "text": "EN116JQG1",
+            "value": "124"
+          },
+          {
+            "text": "EN116JOG1",
+            "value": "126"
+          },
+          {
+            "text": "EN7FN",
+            "value": "128"
+          },
+          {
+            "text": "EN44AGB",
+            "value": "132"
+          },
+          {
+            "text": "EN80AGBE",
+            "value": "133"
+          },
+          {
+            "text": "EN50AGE",
+            "value": "134"
+          },
+          {
+            "text": "EN86AGCE",
+            "value": "135"
+          },
+          {
+            "text": "EN118AGCB",
+            "value": "136"
+          },
+          {
+            "text": "EN48B",
+            "value": "137"
+          },
+          {
+            "text": "EN50WPBE",
+            "value": "140"
+          },
+          {
+            "text": "EN54AGBE",
+            "value": "141"
+          },
+          {
+            "text": "EN63AGBE",
+            "value": "142"
+          },
+          {
+            "text": "EN52AGB",
+            "value": "143"
+          },
+          {
+            "text": "EN70AGBE",
+            "value": "144"
+          },
+          {
+            "text": "EN60Z",
+            "value": "145"
+          },
+          {
+            "text": "ENHB9AG",
+            "value": "146"
+          },
+          {
+            "text": "EN75QQ",
+            "value": "148"
+          },
+          {
+            "text": "EN64SS",
+            "value": "149"
+          },
+          {
+            "text": "EN66Z",
+            "value": "151"
+          },
+          {
+            "text": "EN70MZ",
+            "value": "152"
+          },
+          {
+            "text": "EN42AGB",
+            "value": "153"
+          },
+          {
+            "text": "EN51AGBE",
+            "value": "155"
+          },
+          {
+            "text": "EN66Y",
+            "value": "157"
+          },
+          {
+            "text": "EN50WPAGBE",
+            "value": "158"
+          },
+          {
+            "text": "EN9HB2",
+            "value": "164"
+          },
+          {
+            "text": "CT010T",
+            "value": "165"
+          },
+          {
+            "text": "ENEW010T",
+            "value": "166"
+          },
+          {
+            "text": "ENET010T",
+            "value": "167"
+          },
+          {
+            "text": "ENEG030T",
+            "value": "168"
+          },
+          {
+            "text": "ENBW010T",
+            "value": "169"
+          },
+          {
+            "text": "ENBW020T",
+            "value": "170"
+          },
+          {
+            "text": "ENBW030T",
+            "value": "171"
+          },
+          {
+            "text": "ENBW040T",
+            "value": "172"
+          },
+          {
+            "text": "ENBW050T",
+            "value": "173"
+          },
+          {
+            "text": "ENBW060T",
+            "value": "174"
+          },
+          {
+            "text": "ENBW080W",
+            "value": "175"
+          },
+          {
+            "text": "ENBW070K",
+            "value": "176"
+          },
+          {
+            "text": "ENBT010T",
+            "value": "177"
+          },
+          {
+            "text": "ENBT020T",
+            "value": "178"
+          },
+          {
+            "text": "ENBT030T",
+            "value": "179"
+          },
+          {
+            "text": "ENBT040T",
+            "value": "180"
+          },
+          {
+            "text": "ENBT050T",
+            "value": "181"
+          },
+          {
+            "text": "ENBT060T",
+            "value": "182"
+          },
+          {
+            "text": "ENBT070T",
+            "value": "183"
+          },
+          {
+            "text": "ENBK080T",
+            "value": "184"
+          },
+          {
+            "text": "ENBK090K",
+            "value": "185"
+          },
+          {
+            "text": "ENBG010T",
+            "value": "186"
+          },
+          {
+            "text": "ENBG020T",
+            "value": "187"
+          },
+          {
+            "text": "ENBG030T",
+            "value": "188"
+          },
+          {
+            "text": "ENCW010T",
+            "value": "189"
+          },
+          {
+            "text": "ENCW020T",
+            "value": "190"
+          },
+          {
+            "text": "ENCW030T",
+            "value": "191"
+          },
+          {
+            "text": "ENCW040T",
+            "value": "192"
+          },
+          {
+            "text": "ENCW050T",
+            "value": "193"
+          },
+          {
+            "text": "ENCW060T",
+            "value": "194"
+          },
+          {
+            "text": "ENCW070K",
+            "value": "195"
+          },
+          {
+            "text": "ENCW080K",
+            "value": "196"
+          },
+          {
+            "text": "ENCW090W",
+            "value": "197"
+          },
+          {
+            "text": "ENCT010T",
+            "value": "198"
+          },
+          {
+            "text": "ENCT020T",
+            "value": "199"
+          },
+          {
+            "text": "ENCT030T",
+            "value": "200"
+          },
+          {
+            "text": "ENCT040T",
+            "value": "201"
+          },
+          {
+            "text": "ENCT050T",
+            "value": "202"
+          },
+          {
+            "text": "ENCT060T",
+            "value": "203"
+          },
+          {
+            "text": "ENCT070T",
+            "value": "204"
+          },
+          {
+            "text": "ENCT080T",
+            "value": "205"
+          },
+          {
+            "text": "ENCT090T",
+            "value": "206"
+          },
+          {
+            "text": "ENCK100T",
+            "value": "207"
+          },
+          {
+            "text": "ENCT110T",
+            "value": "208"
+          },
+          {
+            "text": "ENCT120T",
+            "value": "209"
+          },
+          {
+            "text": "ENCK130K",
+            "value": "210"
+          },
+          {
+            "text": "ENCK140K",
+            "value": "211"
+          },
+          {
+            "text": "ENEBW010T",
+            "value": "212"
+          },
+          {
+            "text": "ENEBW020T",
+            "value": "213"
+          },
+          {
+            "text": "ENEBW030K",
+            "value": "214"
+          },
+          {
+            "text": "ENEBW040K",
+            "value": "215"
+          },
+          {
+            "text": "ENEBT010P",
+            "value": "216"
+          },
+          {
+            "text": "ENEBK020T",
+            "value": "217"
+          },
+          {
+            "text": "ENEBK030T",
+            "value": "218"
+          },
+          {
+            "text": "ENEBK040K",
+            "value": "219"
+          },
+          {
+            "text": "ENEBK050K",
+            "value": "220"
+          },
+          {
+            "text": "ENEBK060K",
+            "value": "221"
+          },
+          {
+            "text": "ENEBG010T",
+            "value": "222"
+          },
+          {
+            "text": "ENEBG020T",
+            "value": "223"
+          },
+          {
+            "text": "ENEBG030T",
+            "value": "224"
+          },
+          {
+            "text": "ENEBG040K",
+            "value": "225"
+          },
+          {
+            "text": "ENECW010K",
+            "value": "226"
+          },
+          {
+            "text": "ENECK010K",
+            "value": "227"
+          },
+          {
+            "text": "ENECG010K",
+            "value": "228"
+          },
+          {
+            "text": "ENBCW010T",
+            "value": "229"
+          },
+          {
+            "text": "ENBCW020K",
+            "value": "230"
+          },
+          {
+            "text": "ENBCW030K",
+            "value": "231"
+          },
+          {
+            "text": "ENBCT010T",
+            "value": "232"
+          },
+          {
+            "text": "ENBCK020K",
+            "value": "233"
+          },
+          {
+            "text": "ENBCK030K",
+            "value": "234"
+          },
+          {
+            "text": "ENBCG030K",
+            "value": "235"
+          }
+        ],
+        "tipo": "select"
+      }
+    ],
+    "estructura_html": "\n\t\t\t<div class=\"card-header\">6.- Asistente Para: Ingresos Principales</div>\n\t\t\t<div class=\"card-body\">\n\t\t\t\t<div class=\"row\">\n\t\t\t\t\t<div class=\"col-4\">\n\t\t\t\t\t\t<!-- TIPO ITEM -->\n\t\t\t\t\t\t<div class=\"form-group form-row \">\n            <label class=\"col-auto col-form-label\">Tipo item</label>\n            <div class=\"col\">\n\n              <div class=\"dropdown bootstrap-select form-control\" style=\"width: 100%;\"><select id=\"product_type_id\" name=\"product_type_id\" class=\"form-control selectpicker\" data-live-search=\"1\" title=\"Seleccionar...\" data-selected-text-format=\"count &gt; 1\" data-width=\"100%\" tabindex=\"-98\"><option class=\"bs-title-option\" value=\"\"></option>\n\n              <option value=\"\">Seleccionar...</option>\n                <option value=\"3\"> Caja</option><option value=\"4\"> Fondo</option><option value=\"5\"> Tapa</option><option value=\"6\"> Cuerpo</option><option value=\"8\"> Cabezal</option><option value=\"10\"> Interconector</option><option value=\"12\"> Hoja Rayada</option><option value=\"13\"> Hoja Sencilla</option><option value=\"15\"> Panel Perimetral</option><option value=\"16\"> Plancha</option><option value=\"18\"> Set  de Tabiques</option><option value=\"19\"> Tabique largo</option><option value=\"20\"> Tabique corto</option><option value=\"21\"> Esquinero</option><option value=\"28\"> Bandeja</option><option value=\"32\"> Hoja Troquelada</option><option value=\"34\"> Tapa Pallet</option><option value=\"35\"> Bins</option><option value=\"36\"> Hoja Separadora</option>\n              </select><button type=\"button\" class=\"btn dropdown-toggle bs-placeholder btn-light\" data-toggle=\"dropdown\" role=\"button\" data-id=\"product_type_id\" title=\"Seleccionar...\"><div class=\"filter-option\"><div class=\"filter-option-inner\"><div class=\"filter-option-inner-inner\">Seleccionar...</div></div> </div></button><div class=\"dropdown-menu \" role=\"combobox\" style=\"max-height: 590.125px; overflow: hidden; min-height: 130px;\"><div class=\"bs-searchbox\"><input type=\"text\" class=\"form-control\" autocomplete=\"off\" role=\"textbo",
+    "subtitulos": [],
+    "titulo_seccion": "6.- Asistente Para: Ingresos Principales"
+  },
+  "react": {
+    "campos": [],
+    "estructura_html": "",
+    "subtitulos": [],
+    "titulo_seccion": ""
+  }
+}

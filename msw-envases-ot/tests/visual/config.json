@@ -1,0 +1,42 @@
+{
+  "laravel": {
+    "url": "http://localhost:8080",
+    "login_url": "http://localhost:8080/login"
+  },
+  "react": {
+    "url": "http://localhost:3002",
+    "login_url": "http://localhost:3002"
+  },
+  "usuarios": [
+    {
+      "nombre": "Vendedor",
+      "rut": "11334692-2",
+      "password": "123123"
+    }
+  ],
+  "paginas": [
+    {
+      "nombre": "Dashboard_OTs",
+      "laravel_path": "/home",
+      "react_path": "/work-orders",
+      "espera_selector": "table",
+      "scroll_to_table": true
+    },
+    {
+      "nombre": "Crear_OT",
+      "laravel_path": "/select-ot",
+      "react_path": "/",
+      "react_menu": "Crear OT",
+      "espera_selector": "form, .form-container, [class*='Form']",
+      "scroll_to_table": false,
+      "laravel_acciones_previas": [
+        {"tipo": "select", "selector": "#tipo_solicitud_select_ppal", "valor": "1"},
+        {"tipo": "wait", "valor": "5"}
+      ],
+      "react_acciones_previas": [
+        {"tipo": "select", "selector": "#tipo_solicitud_select", "valor": "1"},
+        {"tipo": "wait", "valor": "3"}
+      ]
+    }
+  ]
+}

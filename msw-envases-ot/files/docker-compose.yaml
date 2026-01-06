@@ -1,0 +1,74 @@
+# INVEB Envases OT - Docker Compose
+# Frontend React + API FastAPI + MySQL (base de datos compartida con Laravel)
+
+version: '3.8'
+
+services:
+  # Frontend React (Vite) - Modo produccion
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: inveb-envases-ot-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+    networks:
+      - inveb-network
+    restart: unless-stopped
+    profiles:
+      - full
+
+  # Frontend en modo desarrollo (hot reload)
+  frontend-dev:
+    image: node:20-alpine
+    container_name: inveb-envases-ot-frontend-dev
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8001/api/v1
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - api
+    networks:
+      - inveb-network
+    profiles:
+      - dev
+
+  # API FastAPI - Conecta a MySQL existente
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inveb-envases-ot-api
+    ports:
+      - "8001:8000"
+    environment:
+      - DEBUG=true
+      - ENVIRONMENT=development
+      # Conexion a MySQL (base de datos compartida)
+      - LARAVEL_MYSQL_HOST=host.docker.internal
+      - LARAVEL_MYSQL_PORT=3307
+      - LARAVEL_MYSQL_USER=root
+      - LARAVEL_MYSQL_PASSWORD=root
+      - LARAVEL_MYSQL_DATABASE=envases_ot
+      # JWT Configuration
+      - JWT_SECRET_KEY=inveb-cascade-service-secret-key-2024
+      - JWT_EXPIRATION_HOURS=24
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./src:/app/src:ro
+      - ./files:/app/files
+    networks:
+      - inveb-network
+    restart: unless-stopped
+
+networks:
+  inveb-network:
+    driver: bridge

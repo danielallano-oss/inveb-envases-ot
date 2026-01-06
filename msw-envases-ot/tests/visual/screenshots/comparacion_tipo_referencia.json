@@ -1,0 +1,178 @@
+{
+  "laravel": {
+    "Tipo Referencia": [
+      {
+        "text": "Sin referencia",
+        "value": "2"
+      },
+      {
+        "text": "No",
+        "value": "0"
+      },
+      {
+        "text": "Si",
+        "value": "1"
+      },
+      {
+        "text": "Ref. Diseño Estructural",
+        "value": "3"
+      },
+      {
+        "text": "Ref. Diseño Gráfico",
+        "value": "4"
+      },
+      {
+        "text": "Ref. Estructura y Grafica",
+        "value": "5"
+      }
+    ],
+    "Bloqueo Referencia": [
+      {
+        "text": "Si",
+        "value": "1"
+      },
+      {
+        "text": "No",
+        "value": "0"
+      }
+    ],
+    "Indicador Facturacion": [
+      {
+        "value": "1",
+        "text": "RRP"
+      },
+      {
+        "value": "2",
+        "text": "E-Commerce"
+      },
+      {
+        "value": "3",
+        "text": "Esquineros"
+      },
+      {
+        "value": "4",
+        "text": "Geometría"
+      },
+      {
+        "value": "5",
+        "text": "Participación nuevo Mercado"
+      },
+      {
+        "value": "7",
+        "text": "Innovación"
+      },
+      {
+        "value": "8",
+        "text": "Sustentabilidad"
+      },
+      {
+        "value": "9",
+        "text": "Automatización"
+      },
+      {
+        "value": "10",
+        "text": "No Aplica"
+      },
+      {
+        "value": "11",
+        "text": "Ahorro"
+      }
+    ]
+  },
+  "react": {},
+  "diferencias": [
+    {
+      "campo": "Tipo Referencia",
+      "problema": "Campo existe en Laravel pero no en React",
+      "laravel": [
+        {
+          "text": "Sin referencia",
+          "value": "2"
+        },
+        {
+          "text": "No",
+          "value": "0"
+        },
+        {
+          "text": "Si",
+          "value": "1"
+        },
+        {
+          "text": "Ref. Diseño Estructural",
+          "value": "3"
+        },
+        {
+          "text": "Ref. Diseño Gráfico",
+          "value": "4"
+        },
+        {
+          "text": "Ref. Estructura y Grafica",
+          "value": "5"
+        }
+      ],
+      "react": []
+    },
+    {
+      "campo": "Bloqueo Referencia",
+      "problema": "Campo existe en Laravel pero no en React",
+      "laravel": [
+        {
+          "text": "Si",
+          "value": "1"
+        },
+        {
+          "text": "No",
+          "value": "0"
+        }
+      ],
+      "react": []
+    },
+    {
+      "campo": "Indicador Facturacion",
+      "problema": "Campo existe en Laravel pero no en React",
+      "laravel": [
+        {
+          "value": "1",
+          "text": "RRP"
+        },
+        {
+          "value": "2",
+          "text": "E-Commerce"
+        },
+        {
+          "value": "3",
+          "text": "Esquineros"
+        },
+        {
+          "value": "4",
+          "text": "Geometría"
+        },
+        {
+          "value": "5",
+          "text": "Participación nuevo Mercado"
+        },
+        {
+          "value": "7",
+          "text": "Innovación"
+        },
+        {
+          "value": "8",
+          "text": "Sustentabilidad"
+        },
+        {
+          "value": "9",
+          "text": "Automatización"
+        },
+        {
+          "value": "10",
+          "text": "No Aplica"
+        },
+        {
+          "value": "11",
+          "text": "Ahorro"
+        }
+      ],
+      "react": []
+    }
+  ]
+}

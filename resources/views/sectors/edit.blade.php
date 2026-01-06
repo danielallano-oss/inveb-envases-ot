@@ -1,0 +1,27 @@
+@extends('layouts.index', ['dontnotify' => true])
+
+@section('content')
+<h1 class="page-title">Editar Sector</h1>
+
+<div class="row mb-3">
+	<div class="col-12 p-2">
+		<!-- formulario: -->
+		<form method="POST" action="{{ route('mantenedores.sectors.update', $sector->id) }}">
+			@method('PUT')
+			@csrf
+			@include('sectors.form', ['tipo' => "edit",'class' => 'disabled','product_types_id' => $product_types_id])
+		</form>
+	</div>
+</div>
+@endsection
+@section('myjsfile')
+<script>
+	$(document).ready(function() {
+
+		if ($('#product_type_id').is(':disabled')) {
+			$('#product_types_id-multiselect .multiselect-selected-text').text('Sin Tipos de Producto para Asignar');
+		}
+
+	});
+</script>
+@endsection

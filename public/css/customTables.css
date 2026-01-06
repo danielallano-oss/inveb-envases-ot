@@ -1,0 +1,9 @@
+#tabla-prospectos thead th:nth-child(5), #tabla-prospectos thead th:nth-child(6), #tabla-prospectos thead th:nth-child(7) {
+  border-left: 1px solid #ccc;
+  text-align: center; }
+
+#tabla-prospectos tbody td:nth-child(5), #tabla-prospectos tbody td:nth-child(7), #tabla-prospectos tbody td:nth-child(9) {
+  border-left: 1px solid #ccc; }
+
+#tabla-prospectos tbody td:nth-child(n + 5) {
+  text-align: center; }

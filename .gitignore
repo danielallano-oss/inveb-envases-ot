@@ -1,0 +1,72 @@
+# Dependencies
+/node_modules
+/vendor
+
+# Laravel
+/public/hot
+/public/storage
+/storage/*.key
+.env
+.env.backup
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+
+# Logs
+npm-debug.log
+yarn-error.log
+*.log
+
+# IDE
+.vscode/sftp.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.swp
+*.swo
+
+# Python (msw-envases-ot)
+msw-envases-ot/__pycache__/
+msw-envases-ot/**/__pycache__/
+msw-envases-ot/*.pyc
+msw-envases-ot/.pytest_cache/
+msw-envases-ot/.env
+
+# Frontend (msw-envases-ot/frontend)
+msw-envases-ot/frontend/node_modules/
+msw-envases-ot/frontend/dist/
+msw-envases-ot/frontend/.env.local
+
+# Specific files to ignore
+public/img/logo-cmpc-2.png
+resources/views/pdf/etiqueta_muestra.blade copy.php
+resources/views/pdf/logo-cmpc.gif
+resources/views/pdf/logo-cmpc.png
+public/files/Como esta estructurado sistema.xlsx
+public/files/management_edit.sql
+public/files/visit_3_photo_1.jpeg
+public/img/marcaagua.png
+app/Http/Controllers/CotizacionControllerProd.php
+resources/views/cotizador/cotizaciones/pdf/carta_cotizacionProd.blade.php
+public/files/favicon-cmpc2.png
+*.xlsx
+public/files/Ajuste listas  por BRC.pptx
+public/files/COT 13888 CAD 351253.PDF
+public/js/ot-detalleAOt copy.js
+public/files/Archivo_Diseño_Externo_OT_15689_20230804-0109.pdf
+public/files/Archivo_Diseño_Externo_OT_15689_20230804-1121.pdf
+public/files/Hoja_Ruta_Num_1-3.pdf
+public/files/Hoja_Ruta_Num_2-3.pdf
+resources/views/cotizador/cotizaciones/pdf/carta_cotizacion.blade.bkp
+resources/views/cotizador/cotizaciones/pdf/cotizacion.blade.bkp
+public/img/anchoHM.png
+public/img/cinco.png
+public/img/cuatro.png
+public/img/dos.png
+public/img/largoHM.png
+public/img/tres.png
+public/img/uno.png

@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inveb-app
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    depends_on:
+      - db
+    networks:
+      - inveb-network
+
+  db:
+    image: mysql:8.0
+    container_name: inveb-mysql-compose
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: inveb_envases
+    ports:
+      - "3307:3306"
+    volumes:
+      - inveb-mysql-data:/var/lib/mysql
+    networks:
+      - inveb-network
+
+networks:
+  inveb-network:
+    driver: bridge
+
+volumes:
+  inveb-mysql-data:

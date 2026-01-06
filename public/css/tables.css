@@ -1,0 +1,31 @@
+.table-responsive.empty:after {
+  content: 'No se encontraron registros';
+  display: block;
+  text-align: center;
+  font-weight: bold; }
+
+.table > thead > tr > th {
+  vertical-align: middle !important; }
+
+.table > thead a {
+  position: relative;
+  display: inline-block;
+  height: 15px;
+  width: 15px;
+  cursor: pointer !important; }
+  .table > thead a i {
+    position: absolute;
+    top: -2px;
+    left: -2px; }
+
+.table > tbody > tr > td > td {
+  vertical-align: middle !important; }
+
+.table > tbody i {
+  font-size: 15px;
+  margin-left: 5px;
+  margin-right: 5px; }
+
+.table.actions tr th:last-child, .table.actions tr td:last-child {
+  width: 100px;
+  text-align: center; }

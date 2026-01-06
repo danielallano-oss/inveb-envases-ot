@@ -1,0 +1,832 @@
+<div class="form-row">
+	<!-- Solo si es creacion por ingeniero -->
+	@if((auth()->user()->role_id == 5 || auth()->user()->role_id == 6) && $tipo == "create")
+	<div id="" class="col-12 mb-2">
+		<div class="card py-2">
+			<div class="col-4">
+				{!! armarSelectArrayCreateEditOT($vendedores, 'vendedor_id', 'Seleccione Vendedor' , $errors, $vendedores ,'form-control form-element',true,true) !!}
+			</div>
+		</div>
+	</div>
+	@endif
+
+	<div id="ot-tipo-solicitud" class="col-12 mb-2">
+		<div class="card">
+			<div class="card-header">2.- Datos comerciales</div>
+			<div class="card-body">
+				<div class="row">
+					@if($errors->any())
+					@endif
+
+					<!-- Solo se permite seleccionar al crearlo, luego no puede ser modificado -->
+					@if($tipo == "create")
+						
+						<div class="col-4">
+							
+							{!! armarSelectArrayCreateEditOT($clients, 'client_id', 'Cliente' , $errors, $ot ,'form-control form-element',true,true) !!}
+						</div>
+					<!-- Validacion para que pueda editar el super administrador -->
+					@elseif(Auth()->user()->isSuperAdministrador())
+						<div class="col-4">
+							<!-- Cliente -->
+							{!! armarSelectArrayCreateEditOT($clients, 'client_id', 'Cliente' , $errors, $ot ,'form-control',true,true) !!}
+						</div>
+					@else
+						<div class="col-4">
+							<!-- Cliente -->
+							{!! inputReadOnly('Cliente',$ot->client->nombre) !!}
+						</div>
+					@endif
+					<div class="col-4">
+						<!-- Descripción -->
+						{!! armarInputCreateEditOT('descripcion', 'Descripción:', 'text',$errors, $ot, 'form-control', 'maxlength="40"', '') !!}
+					</div>
+					<div class="col-4">
+						<!-- Código Producto -->
+						{!! armarInputCreateEditOT('codigo_producto', 'Código Producto:', 'text',$errors, $ot, 'form-control', '', '') !!}
+					</div>
+
+					<div class="col-4">
+						<!-- Solo se permite seleccionar al crearlo, luego no puede ser modificado -->
+						@if($tipo == "create")
+							<!-- Tipo de Solicitud -->
+							{!! armarSelectArrayCreateEditOT($tipos_solicitud, 'tipo_solicitud', 'Tipo de solicitud:' , $errors, null ,'form-control',true,false) !!}
+							<!-- Contactos Cliente -->
+							<!-- //style="display:none" -->
+							{!! armarSelectArrayCreateEditOT([], 'contactos_cliente', 'Contactos Cliente' , $errors, $ot ,'form-control form-element',true,true) !!}
+						@elseif(Auth()->user()->isSuperAdministrador())
+							<!-- Tipo de Solicitud -->
+							
+							<!-- Contactos Cliente -->
+							<!-- //style="display:none" -->
+							{!! armarSelectArrayCreateEditOT([], 'contactos_cliente', 'Contactos Cliente' , $errors, $ot ,'form-control form-element',true,true) !!}
+						@else
+							<!-- Tipo de Solicitud -->
+							{!! inputReadOnly('Tipo de Solicitud', [1 => "Desarrollo Completo", 4 => "Cotiza sin CAD", 2 => "Cotiza con CAD", 3 => "Muestra con CAD", 5 => "Arte con Material"][$ot->tipo_solicitud]) !!}
+							<input type="hidden" id="tipo_solicitud_2" value="{{$ot->tipo_solicitud}}">
+						@endif
+
+
+						<!-- Nombre Contacto -->
+						{!! armarInputCreateEditOT('nombre_contacto', 'Nombre Contacto:', 'text', $errors, $ot, 'form-control', '', '') !!}
+						<!-- Email Contacto -->
+						{!! armarInputCreateEditOT('email_contacto', 'Email Contacto:', 'email', $errors, $ot, 'form-control', '', '') !!}
+						<!-- Teléfono Contacto -->
+						{!! armarInputCreateEditOT('telefono_contacto', 'Teléfono Contacto:', 'text', $errors, $ot, 'form-control', '', '') !!}
+					</div>
+					<div class="col-4">
+						<div class="form-group form-row">
+							<div class="col-6">
+								<!-- Volumen vta. anual:-->
+								{!! armarInputCreateEditOT('volumen_venta_anual', 'Vol vta anual:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+							</div>
+							<div class="col-6">
+								<!-- USD -->
+								{!! armarInputCreateEditOT('usd', 'USD:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+							</div>
+						</div>
+						<!-- Organizacion de Ventas -->
+						{!! armarSelectArrayCreateEditOT($org_ventas, 'org_venta_id', 'Org. Venta' , $errors, $ot ,'form-control',true,false) !!}
+						<!-- Canal -->
+						{!! armarSelectArrayCreateEditOT($canals, 'canal_id', 'Canal' , $errors, $ot ,'form-control',true,false) !!}
+						<!-- OC -->
+						{!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'oc', 'OC' , $errors, $ot ,'form-control',true,false) !!}
+
+					</div>
+					<div class="col-4">						
+						{!! armarSelectArrayCreateEditOT($hierarchies, 'hierarchy_id', 'Jerarquía 1' , $errors, $ot ,'form-control',true,true) !!}
+						<!-- Jerarquía 2-->
+						{!! armarSelectArrayCreateEditOT($subhierarchies, 'subhierarchy_id', 'Jerarquía 2' , $errors, $ot ,'form-control',true,true) !!}
+						<!-- Jerarquía 3-->
+						{!! armarSelectArrayCreateEditOT($subsubhierarchies, 'subsubhierarchy_id', 'Jerarquía 3' , $errors, $ot ,'form-control',true,true) !!}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="ot-solicita" class="col-5 mb-2">
+		<div class="card h-100">
+			<div class="card-header">Solicita</div>
+			<div class="card-body">
+				<div id="checkbox-card" class="row pt-2" style="display: flex;justify-content: space-evenly;">
+					<div class="checkboxCol">
+						<div class="custom-control custom-checkbox mb-1">
+							<input type="checkbox" class="custom-control-input" value="analisis" id="analisis" name="checkboxes[]" @if ((!old('_token') && $tipo=='edit' && $ot->analisis == 1) || (old('analisis'))) checked @endif>
+							<label class="custom-control-label" for="analisis">Análisis</label>
+						</div>
+						<div class="custom-control custom-checkbox">
+							<input type="checkbox" class="custom-control-input" value="plano" id="plano" name="checkboxes[]" @if ((!old('_token') && $tipo=='edit' && $ot->plano == 1) || (old('plano'))) checked @endif>
+							<label class="custom-control-label" for="plano">Plano</label>
+						</div>
+					</div>
+					<div class="checkboxCol">
+						<div class="custom-control custom-checkbox mb-1">
+							<input type="checkbox" class="custom-control-input" value="prueba_industrial" id="prueba_industrial" name="checkboxes[]" @if ((!old('_token') && $tipo=='edit' && $ot->prueba_industrial == 1) || (old('prueba_industrial'))) checked @endif>
+							<label class="custom-control-label" for="prueba_industrial">Prueba Industrial</label>
+						</div>
+
+						<div class="custom-control custom-checkbox">
+							<input type="checkbox" class="custom-control-input" value="datos_cotizar" id="datos_cotizar" name="checkboxes[]" @if ((!old('_token') && $tipo=='edit' && $ot->datos_cotizar == 1) || (old('datos_cotizar'))) checked @endif>
+							<label class="custom-control-label" for="datos_cotizar">Datos para Cotizar</label>
+						</div>
+					</div>
+					<div class="checkboxCol">
+						<div class="custom-control custom-checkbox mb-1">
+							<input type="checkbox" class="custom-control-input" value="boceto" id="boceto" name="checkboxes[]" @if ((!old('_token') && $tipo=='edit' && $ot->boceto == 1) || (old('boceto'))) checked @endif>
+							<label class="custom-control-label" for="boceto">Boceto</label>
+						</div>
+						<div class="custom-control custom-checkbox">
+							<input type="checkbox" class="custom-control-input" value="nuevo_material" id="nuevo_material" name="checkboxes[]" @if ((!old('_token') && $tipo=='edit' && $ot->nuevo_material == 1) || (old('nuevo_material'))) checked @endif>
+							<label class="custom-control-label" for="nuevo_material">Nuevo Material</label>
+						</div>
+					</div>
+					<div>
+						<div class="custom-control custom-checkbox mb-1" style="    display: flex;justify-content: space-between;">
+							<input type="checkbox" class="custom-control-input" value="muestra" id="muestra" name="checkboxes[]" @if ((!old('_token') && $tipo=='edit' && $ot->muestra == 1) || (old('muestra'))) checked @endif>
+							<label class="custom-control-label" for="muestra">Muestra</label>
+							<span class="marcas-aprobaciones">
+								@if($tipo=='edit' && $ot->tipo_solicitud == 3)
+								{!!$ot->present()->iconosAprobacionVenta()!!}
+								{!!$ot->present()->iconosAprobacionDesarrollo()!!}
+								@endif
+							</span>
+
+							<!-- <div class="material-icons md-14" data-toggle="tooltip" title="Gestionar">search</div> -->
+						</div>
+						<div style="width:140px">
+							<div style="width:140px;display:none" id="container-numero-muetras">
+
+								<!-- Numero de Muetras -->
+								{!! armarInputCreateEditOT('numero_muestras', 'N° Muestras:', 'number',$errors, $ot, 'form-control', 'min="1"', '') !!}
+							</div>
+						</div>
+
+					</div>
+				</div>
+				@if($errors->has('analisis')||$errors->has('plano')||$errors->has('muestra')||$errors->has('datos_cotizar')
+				||$errors->has('boceto')||$errors->has('nuevo_material')||$errors->has('prueba_industrial'))
+				<div class="error text-center p-3">
+					<h6 style="color:red">* Debes seleccionar al menos una opción</h5>
+				</div>
+				@endif
+			</div>
+		</div>
+	</div>
+
+	<div id="ot-datos-cliente" class="col-7 mb-2">
+		<div class="card h-100">
+			<div class="card-header">Referencia Material</div>
+			<div class="card-body">
+				<div class="row">
+					<div class="col-3">
+						<!-- Tipo Referencia -->
+						{!! armarSelectArrayCreateEditOTSeparado($reference_type, 'reference_type', 'Tipo Referencia' , $errors, $ot ,'form-control',true,false) !!}
+
+					</div>
+					<div class="col-2">
+						<!-- Referencia -->
+						{!! armarSelectArrayCreateEditOTSeparado($materials, 'reference_id', 'Referencia' , $errors, $ot ,'form-control',true,true) !!}
+						<!--                                Cambiar valores -->
+
+					</div>
+					<div class="col-3">
+						<!-- Bloqueo Referencia -->
+						{!! armarSelectArrayCreateEditOTSeparado([1 => "Si", 0=>"No"], 'bloqueo_referencia', 'Bloqueo Referencia' , $errors, $ot ,'form-control',true,false) !!}
+
+					</div>
+					<div class="col-4">
+						<!-- Indicador Facturación Diseño Estructural-->
+						<!-- 6=>'Offest', -->
+						<!-- 12=>'Impresión', -->
+						{!! armarSelectArrayCreateEditOTSeparado([
+							1=>'RRP',
+							2=>'E-Commerce',
+							3=>'Esquineros',
+							4=>'Geometría',
+							5=>'Participación nuevo Mercado',
+							7=>'Innovación',
+							8=>'Sustentabilidad',
+							9=>'Automatización',
+							10=>'No Aplica',
+							11=>'Ahorro'], 'indicador_facturacion', 'Indicador Facturación D.E.' , $errors, $ot ,'form-control',true,false) !!}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="ot-ingresos-principales" class="col-12 mb-2">
+		<div class="card h-100">
+			<div class="card-header">Ingresos Principales</div>
+			<div class="card-body">
+				<div class="row">
+					<div class="col-4">
+						<!-- TIPO ITEM -->
+						{!! armarSelectArrayCreateEditOT($productTypes, 'product_type_id', 'Tipo item' , $errors, $ot ,'form-control',true,true) !!}
+
+						<!-- Impresión -->
+						{!! armarSelectArrayCreateEditOT($impresion, 'impresion', 'Impresión', $errors, $ot ,'form-control form-element',true,true) !!}
+
+						<!-- FSC -->
+						{!! armarSelectArrayCreateEditOT($fsc, 'fsc', 'FSC' , $errors, $ot ,'form-control form-element',true,true) !!}						
+					</div>
+					<div class="col-4">		
+						<!-- Cinta-->
+						{!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'cinta', 'Cinta' , $errors, $ot ,'form-control',true,false) !!}
+	
+						<!-- Recubrimiento Interno -->
+						{!! armarSelectArrayCreateEditOT($coverageInternal, 'coverage_internal_id', 'Recubrimiento Interno' , $errors, $ot ,'form-control',true,false) !!}
+
+						<!-- Recubrimiento Externo -->
+						{!! armarSelectArrayCreateEditOT($coverageExternal, 'coverage_external_id', 'Recubrimiento Externo' , $errors, $ot ,'form-control',true,false) !!}
+					</div>
+					<div class="col-4">						
+						<!-- PLANTA OBJETIVO -->
+						{!! armarSelectArrayCreateEditOT($plantaObjetivo, 'planta_id', 'Planta Objetivo' , $errors, $ot ,'form-control',true,true) !!}
+
+						<!-- Color Cartón-->
+						{!! armarSelectArrayCreateEditOT([1=>"Café",2=>"Blanco"], 'carton_color', 'Color Cartón' , $errors, $ot ,'form-control',true,true) !!}
+
+						<!-- Cartón-->
+						{!! armarSelectArrayCreateEditOT($cartons, 'carton_id', 'Cartón' , $errors, $ot ,'form-control',true,true) !!}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="ot-caracteristicas" class="col-12 mb-2">
+		<div class="card h-100">
+
+			<div class="card-header">Características </div>
+			<input hidden class="" id="cad_asignado" value="{{ isset($ot->cad_id) ? $ot->cad_id : null}}" style="display:none;"></input>
+			<input hidden class="" id="material_asignado" value="{{isset($ot->material_id) ? $ot->material_id : null}}" style="display:none;"></input>
+			<input hidden class="" id="ot_id" value="{{isset($ot) ? $ot->id : null}}" style="display:none;"></input>
+
+			<div class="card-body">
+				<div class="row">
+					<div class="col-4">
+
+						<div class="" id="cad_input_container">
+							<!-- CAD:-->
+							{!! armarInputCreateEditOT('cad', 'CAD:', 'text',$errors, $ot, 'form-control', '', '') !!}
+						</div>
+						<div class="" id="cad_select_container" style="display:none">
+							<!-- CAD Select -->
+							{!! armarSelectArrayCreateEditOT($cads, 'cad_id', 'CAD' , $errors, $ot ,'form-control form-element',true,true) !!}
+						</div>
+
+						<!-- TIPO ITEM -->
+						{!! armarInputCreateEditOT('product_type_id_text', 'Tipo item:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<div class="form-group form-row">
+							<div class="col-6">
+								<!-- Items del set -->
+								{!! armarInputCreateEditOT('items_set', 'Items del set:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- Veces Item -->
+								{!! armarInputCreateEditOT('veces_item', 'Veces Item:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+						</div>
+
+						<!-- Color Cartón-->
+						{!! armarInputCreateEditOT('carton_color_text', 'Color Cartón:', 'text',$errors, $ot, 'form-control', '', '') !!}
+						
+						<!-- Cartón-->
+						{!! armarInputCreateEditOT('carton_id_text', 'Cartón:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<!-- Cinta-->
+						{!! armarInputCreateEditOT('cinta_text', 'Cinta:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<!-- FSC -->
+						{!! armarInputCreateEditOT('fsc_text', 'FSC:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<!-- <div class="row mt-2">
+							<div class="col" style="flex-grow:3">								
+							</div>
+							<div class="col" style="flex-grow:13"> -->
+								<!-- FSC Observación -->
+								<!-- {!! armarInputCreateEditOT('fsc_observacion', 'Observación FSC :', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>
+						</div> -->
+
+						<!-- PAÍS REFERENCIA ahora llamado PAÍS/MERCADO DESTINO -->
+						{!! armarSelectArrayCreateEditOT($paisReferencia, 'pais_id', 'PAÍS/MERCADO DESTINO' , $errors, $ot ,'form-control',true,true) !!}
+
+						<!-- PLANTA OBJETIVO -->
+						{!! armarInputCreateEditOT('planta_id_text', 'Planta Objetivo:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<!-- RESTRICCIÓN PALLET -->
+						{!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'restriccion_pallet', 'Restricción Paletizado' , $errors, $ot ,'form-control',true,false) !!}						
+
+						<!-- TAMAÑO PALLET -->
+						{!! armarSelectArrayCreateEditOT($palletTypes, 'tamano_pallet_type_id', 'Tamaño Pallet' , $errors, $ot ,'form-control',true,true) !!}
+
+						<!-- ALTURA PALLET -->
+						{!! armarInputCreateEditOT('altura_pallet', 'Altura Pallet:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+						<!-- PERMITE SOBRESALIR CARGA -->
+						{!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'permite_sobresalir_carga', 'Permite Sobresalir Carga' , $errors, $ot ,'form-control',true,false) !!}						
+
+					</div>
+					<div class="col-4">
+
+						<!-- Estilo-->
+						{!! armarSelectArrayCreateEditOT($styles, 'style_id', 'Estilo' , $errors, $ot ,'form-control',true,true) !!}
+
+						<div class="form-group form-row">
+							<div class="col-6">
+								<!-- Largura HM -->
+								{!! armarInputCreateEditOT('largura_hm', 'Largura HM:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- Anchura HM -->
+								{!! armarInputCreateEditOT('anchura_hm', 'Anchura HM:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+						</div>
+
+						<!-- Área producto (m2) -->
+						{!! armarInputCreateEditOT('area_producto', 'Área Producto (m2):', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<label id="area-error" style="color:red;margin-bottom:5px;font-size:0.9em;font-weight:normal;text-transform:none;padding-left:1.25rem"></label>
+
+						<!-- Recorte Adicional / Area Agujero -->
+						{!! armarInputCreateEditOT('recorte_adicional', 'Recorte Adicional / Area Agujero (m2):', 'text',$errors, $ot, 'form-control', '', '') !!}
+						
+						<label id="recorte-error" style="color:red;margin-bottom:5px;font-size:0.9em;font-weight:normal;text-transform:none;padding-left:1.25rem"></label>
+
+						<!-- Liner Exterior -->
+						<!-- <div class="form-group form-row">
+							<label class="col-auto col-form-label" for="">Liner Externo:</label>
+							<div class="col">
+								<input id="liner_exterior" type="text" class="form-control-plaintext" value="" readonly="" title="" data-toggle="tooltip" data-original-title="">
+							</div>
+						</div> -->
+						<!-- Longitud Pegado -->
+						{!! armarInputCreateEditOT('longitud_pegado', 'Longitud Pegado (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+						<!-- Recubrimiento-->
+						<!-- {!! armarSelectArrayCreateEditOT($recubrimiento_type, 'recubrimiento', 'Recubrimiento' , $errors, $ot ,'form-control',true,false) !!} -->
+						<!-- [1 => "Cera", 0=>"No"] -->
+
+						<div class="form-group form-row">
+							<div class="col-6">
+								<!-- Golpes al largo -->
+								{!! armarInputCreateEditOT('golpes_largo', 'Golpes al largo:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- Golpes al ancho -->
+								{!! armarInputCreateEditOT('golpes_ancho', 'Golpes al ancho:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+						</div>
+						<div class="form-group form-row">
+							<div class="col-12">
+								<!-- Separación Golpes al Largo -->
+								{!! armarInputCreateEditOT('separacion_golpes_largo', 'Separación Golpes al Largo (mm):', 'text',$errors, $ot, 'form-control', '', '') !!}
+								<!-- {!! armarInputCreateEditOT('separacion_golpes_largo', 'Separación Golpes al Largo (mm):', 'text',$errors, $ot, 'form-control', 'min="0"', '') !!} -->
+							</div>							
+						</div>
+						<div class="form-group form-row">							
+							<div class="col-12">
+								<!-- Separación Golpes Ancho -->
+								{!! armarInputCreateEditOT('separacion_golpes_ancho', 'Separación Golpes al Ancho (mm):', 'text',$errors, $ot, 'form-control', '', '') !!}
+								<!-- {!! armarInputCreateEditOT('separacion_golpes_ancho', 'Separación Golpes al Ancho (mm):', 'text',$errors, $ot, 'form-control', 'min="0"', '') !!} -->
+							</div>
+						</div>
+						<div class="form-group form-row">
+							<div class="col-6">
+								<!-- Rayado C1/R1 (mm) -->
+								{!! armarInputCreateEditOT('rayado_c1r1', 'Rayado C1/R1 (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- Rayado R1/R2 (mm) -->
+								{!! armarInputCreateEditOT('rayado_r1_r2', 'Rayado R1/R2 (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+						</div>
+						<div class="form-group form-row ">
+							<div class="col-6">
+								<!-- Rayado R2/C2 (mm) -->
+								{!! armarInputCreateEditOT('rayado_r2_c2', 'Rayado R2/C2 (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+							<div class="col-6">
+							</div>
+							<label id="rayado-error" style="color:red;margin-bottom:5px;font-size:0.9em;font-weight:normal;text-transform:none"></label>
+						</div>
+					</div>
+					<div class="col-4">
+
+						<div class="form-group form-row">
+							<div class="col-6">
+								<!-- BCT MIN (LB)-->
+								{!! armarInputCreateEditOT('bct_min_lb', 'BCT MIN (LB):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- BCT MIN (KG)-->
+								<div class="form-group form-row">
+									<label class="col-auto col-form-label" for="">BCT MIN (KG):</label>
+									<div class="col">
+										<input id="bct_min_kg" name="bct_min_kg" type="text" class="form-control" readonly="" value="{{isset($ot) ? $ot->bct_min_kg : null}}">
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="form-group form-row">
+							<div class="col-6">
+								<!-- BCT HUMEDO (LB)-->
+								{!! armarInputCreateEditOT('bct_humedo_lb', 'BCT HUMEDO (LB):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- ECT (lb/pulg) -->
+								{!! armarInputCreateEditOT('ect', 'ECT (lb/pulg):', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>
+						</div>
+						<div class="form-group form-row">
+							<div class="col-6">
+								<!-- Gramaje (g/m2) -->
+								{!! armarInputCreateEditOT('gramaje', 'Gramaje (g/m2):', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- MULLEN (LB/PULG2)-->
+								{!! armarInputCreateEditOT('mullen', 'Mullen (LB/PULG2):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+							</div>
+						</div>
+						<div class="form-group form-row ">
+							<div class="col-6">
+								<!-- FCT (lb/pulg2)  -->
+								{!! armarInputCreateEditOT('fct', 'FCT (lb/pulg2) :', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- Espesor (mm)  -->
+								{!! armarInputCreateEditOT('espesor', 'Espesor (mm) :', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- Cobb Interior (g/m2)  -->
+								{!! armarInputCreateEditOT('cobb_interior', 'Cobb Interior (g/m2) :', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- Cobb Exterior (g/m2)  -->
+								{!! armarInputCreateEditOT('cobb_exterior', 'Cobb Exterior (g/m2) :', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>							
+						</div>
+						<div class="form-group form-row">
+							<div class="col-6">
+								<!-- Flexion de aleta (%) -->
+								{!! armarInputCreateEditOT('flexion_aleta', 'Flexion de aleta (%):', 'number',$errors, $ot, 'form-control', 'min="1" max="100"', '') !!}
+							</div>
+							<div class="col-6">
+								<!-- Peso (g) -->
+								{!! armarInputCreateEditOT('peso', 'Peso (g):', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>
+						</div>
+						<div class="form-group form-row">
+							<div class="col-12">
+								<!-- Incision Rayado Longitudinal -->
+								{!! armarInputCreateEditOT('incision_rayado_longitudinal', 'Incisión Rayado Longitud [N]:', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>
+						</div>	
+						<div class="form-group form-row">
+							<div class="col-12">
+								<!-- Incision Rayado Vertical -->
+								{!! armarInputCreateEditOT('incision_rayado_vertical', 'Incisión Rayado Vertical [N]:', 'text',$errors, $ot, 'form-control', '', '') !!}
+							</div>
+						</div>	
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<div id="ot-distancia-cinta" class="col-12 mb-2" style="display:none">
+		<div class="card h-100">
+
+			<div class="card-header">Distancia Cinta </div>
+
+			<div class="card-body">
+				<div class="row">
+					<div class="col-4">
+						<!-- Distancia Corte 1 a Cinta 1 -->
+						{!! armarInputCreateEditOT('distancia_cinta_1', 'Distancia Corte 1 a Cinta 1 (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+						<!-- Distancia Corte 1 a Cinta 2 -->
+						{!! armarInputCreateEditOT('distancia_cinta_2', 'Distancia Corte 1 a Cinta 2 (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+						<!-- Distancia Corte 1 a Cinta 3 -->
+						{!! armarInputCreateEditOT('distancia_cinta_3', 'Distancia Corte 1 a Cinta 3 (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+					</div>
+					<div class="col-4">
+						<!-- Distancia Corte 1 a Cinta 4 -->
+						{!! armarInputCreateEditOT('distancia_cinta_4', 'Distancia Corte 1 a Cinta 4 (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+						<!-- Distancia Corte 1 a Cinta 5 -->
+						{!! armarInputCreateEditOT('distancia_cinta_5', 'Distancia Corte 1 a Cinta 5 (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+						<!-- Distancia Corte 1 a Cinta 6 -->
+						{!! armarInputCreateEditOT('distancia_cinta_6', 'Distancia Corte 1 a Cinta 6 (mm):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+					</div>
+					<div class="col-4">
+						<!-- Corte de Liner:-->
+						{!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'corte_liner', 'Corte de Liner:' , $errors, $ot ,'form-control',true,false) !!}
+						<!-- Tipo de Cinta-->
+						{!! armarSelectArrayCreateEditOT([1 => "Corte", 2=>"Resistencia"], 'tipo_cinta', 'Tipo de Cinta' , $errors, $ot ,'form-control',true,false) !!}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="ot-colores" class="col-12 mb-2" >
+		<div class="card h-100">
+			<div class="card-header">Color-Cera-Barniz</div>
+			<!-- @if($tipo == "edit" && Auth()->user()->isVendedor())
+				<div class="alert-warning" style="padding:5px;margin:10px;border-radius:7px;">
+					NOTA: Para editar, primero se deben seleccionar los campos de RECUBRIMIENTO INTERNO y RECUBRIMIENTO EXTERNO.
+				</div>
+			@endif -->
+			<div class="card-body">
+				<div class="row">
+
+					<div class="col-3">
+						<!-- Impresión -->
+						{!! armarInputCreateEditOT('impresion_text', 'Impresión:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<!-- TIPO Diseno -->
+						{!! armarSelectArrayCreateEditOT($designTypes, 'design_type_id', 'Tipo Diseño', $errors, $ot ,'form-control',true,false,"200px") !!}
+
+						<!-- Complejidad -->
+						{!! armarInputCreateEditOT('complejidad', 'Complejidad', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<!-- Numero Colores-->
+						{!! armarSelectArrayCreateEditOT([0,1,2,3,4,5,6], 'numero_colores', 'Número Colores' , $errors, $ot ,'form-control',true,true) !!}
+
+						<!-- Recubrimiento Interno -->
+						{!! armarInputCreateEditOT('coverage_internal_id_text', 'Recubrimiento Interno:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<!-- % Recubrimiento Interno -->
+						{!! armarInputCreateEditOT('percentage_coverage_internal', '% Recubrimiento Interno:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+						<!-- Recubrimiento Externo -->
+						{!! armarInputCreateEditOT('coverage_external_id_text', 'Recubrimiento Externo:', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+						<!-- % Recubrimiento Externo -->
+						{!! armarInputCreateEditOT('percentage_coverage_external', '% Recubrimiento Externo:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+					</div>
+					<div class="col">
+
+						<!-- Color 1-->
+						{!! armarSelectArrayCreateEditOT($colors, 'color_1_id', 'Color 1' , $errors, $ot ,'form-control',true,true,"145px") !!}							
+						<!-- % Impresión 1 -->
+						{!! armarInputCreateEditOT('impresion_1', '% Impresión 1:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+						<!-- Color 2-->
+						{!! armarSelectArrayCreateEditOT($colors, 'color_2_id', 'Color 2' , $errors, $ot ,'form-control',true,true,"145px") !!}
+						<!-- % Impresión 2 -->
+						{!! armarInputCreateEditOT('impresion_2', '% Impresión 2:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+						<!-- Color 3-->
+						{!! armarSelectArrayCreateEditOT($colors, 'color_3_id', 'Color 3' , $errors, $ot ,'form-control',true,true,"145px") !!}
+						<!-- % Impresión 3 -->
+						{!! armarInputCreateEditOT('impresion_3', '% Impresión 3:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+					</div>
+					<div class="col">
+
+						<!-- Color 4-->
+						{!! armarSelectArrayCreateEditOT($colors, 'color_4_id', 'Color 4' , $errors, $ot ,'form-control',true,true,"145px") !!}
+						<!-- % Impresión 4 -->
+						{!! armarInputCreateEditOT('impresion_4', '% Impresión 4:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+						<!-- Color 5-->
+						{!! armarSelectArrayCreateEditOT($colors, 'color_5_id', 'Color 5' , $errors, $ot ,'form-control',true,true,"145px") !!}
+						<!-- % Impresión 5 -->
+						{!! armarInputCreateEditOT('impresion_5', '% Impresión 5:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+						<!-- Color 6-->
+						{!! armarSelectArrayCreateEditOT($colors, 'color_6_id', 'Color 6' , $errors, $ot ,'form-control',true,true,"145px") !!}
+						<!-- % Impresión 6 -->
+						{!! armarInputCreateEditOT('impresion_6', '% Impresión 6:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+					</div>
+					<div class="col">
+						<!-- Barniz UV -->
+						{!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'barniz_uv', 'Barniz UV' , $errors, $ot ,'form-control',true,false) !!}	
+						<!-- % Barniz UV -->
+						{!! armarInputCreateEditOT('porcentanje_barniz_uv', '% Impresión B. UV:', 'number',$errors, $ot, 'form-control', '', '') !!}						
+
+						<!-- Color Interno -->
+						{!! armarSelectArrayCreateEditOT($colors, 'color_interno', 'Color Interno' , $errors, $ot ,'form-control',true,true,"105px") !!}
+						<!-- % Impresión Color Interno -->
+						{!! armarInputCreateEditOT('impresion_color_interno', '% Impresión C. I.:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+					</div>
+					<div class="col">
+
+						<!-- Indicador Facturación Diseño Gráfico -->
+						{!! armarInputCreateEditOT('indicador_facturacion_diseno_grafico', 'Indicador Facturación D.G.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;', 'text',$errors, $ot, 'form-control', '', '') !!}
+
+					</div>
+
+				</div>				
+			</div>
+		</div>
+	</div>
+
+	<!-- Anterior Respaldo -->
+		<!-- Pegado -->
+		<!-- {!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'pegado', 'Pegado' , $errors, $ot ,'form-control',true,false) !!}	-->
+
+		<!-- Cera Exterior -->
+		<!-- {!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'cera_exterior', 'Cera Exterior' , $errors, $ot ,'form-control',true,false) !!} -->
+		<!-- % Cera Exterior -->
+		<!-- {!! armarInputCreateEditOT('porcentaje_cera_exterior', '% Cera Exterior:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!} -->
+
+		<!-- Cera Interior -->
+		<!-- {!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'cera_interior', 'Cera Interior' , $errors, $ot ,'form-control',true,false) !!} -->
+		<!-- % Cera Interior -->
+		<!-- {!! armarInputCreateEditOT('porcentaje_cera_interior', '% Cera Interior:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!} -->
+
+		<!-- Barniz Interior -->
+		<!-- {!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'barniz_interior', 'Barniz Externo' , $errors, $ot ,'form-control',true,false) !!} -->
+		<!-- % Barniz Interior -->
+		<!-- {!! armarInputCreateEditOT('porcentaje_barniz_interior', '% Barniz Externo:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!} -->
+
+	<!-- Fin Anterior Respaldo-->
+
+	<div id="ot-medidas-interiores" class="col-4 mb-2" >
+		<div class="card h-100">
+			<div class="card-header">Medidas Interiores</div>
+			<div class="card-body form-row">
+				<div class="col-4">
+					<!-- Largo (mm) -->
+					{!! armarInputCreateEditOT_2('interno_largo', 'Largo (mm):', 'text',$errors, $ot, 'form-control', 'min="0"', '') !!}
+				</div>
+				<div class="col-4">
+					<!-- Ancho (mm) -->
+					{!! armarInputCreateEditOT('interno_ancho', 'Ancho (mm):', 'text',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+				</div>
+				<div class="col-4">
+					<!-- Alto (mm) -->
+					{!! armarInputCreateEditOT('interno_alto', 'Alto (mm):', 'text',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+				</div>
+			</div>
+			<label id="medida-interior-error" style="color:red;margin-bottom:5px;font-size:0.9em;font-weight:normal;text-transform:none;padding-left:1.25rem"></label>
+
+		</div>
+	</div>
+	<div id="ot-medidas-exteriores" class="col-4 mb-2" >
+		<div class="card h-100">
+			<div class="card-header">Medidas Exteriores</div>
+			<div class="card-body form-row">
+
+				<div class="col-4">
+					<!-- Largo (mm) -->
+					{!! armarInputCreateEditOT('externo_largo', 'Largo (mm):', 'text',$errors, $ot, 'form-control', 'min="0"', '') !!}
+				</div>
+				<div class="col-4">
+					<!-- Ancho (mm) -->
+					{!! armarInputCreateEditOT('externo_ancho', 'Ancho (mm):', 'text',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+				</div>
+				<div class="col-4">
+					<!-- Alto (mm) -->
+					{!! armarInputCreateEditOT('externo_alto', 'Alto (mm):', 'text',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="ot-terminaciones" class="col-4 mb-2" >
+		<div class="card h-100">
+			<div class="card-header">Terminaciones</div>
+			<div class="card-body form-row">
+				<div class="col-4">
+					<!-- Proceso -->
+					{!! armarSelectArrayCreateEditOT($procesos, 'process_id', 'Proceso' , $errors, $ot ,'form-control',true,false) !!}
+				</div>
+				<div class="col-4">
+					<!-- Pegado -->
+					{!! armarSelectArrayCreateEditOT([ 
+						0=>"No Aplica",
+						2=>"Pegado Interno",
+						3=>"Pegado Externo",
+						4=>"Pegado 3 Puntos",
+						5=>"Pegado 4 Puntos"], 'pegado_terminacion', 'Tipo Pegado' , $errors, $ot ,'form-control',true,false,"118px") !!}
+				</div>
+				<div class="col-4">
+					<!-- Armado -->
+					{!! armarSelectArrayCreateEditOT($armados, 'armado_id', 'Armado' , $errors, $ot ,'form-control',true,false) !!}
+				</div>
+				<div class="col-12 mt-2">
+					<!-- Sentido Arm. -->
+					{!! armarSelectArrayCreateEditOT($sentidos_armado, 'sentido_armado', 'Sentido de Armado &nbsp;' , $errors, $ot ,'form-control',true,false) !!}
+
+				</div>
+				<div class="col-12 mt-2">
+					<!-- Maquila-->
+					{!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'maquila', 'Maquila' , $errors, $ot ,'form-control',true,false) !!}		
+				</div>
+				<div class="col-12 mt-2">
+					<!-- Servicios Maquila-->
+					{!! armarSelectArrayCreateEditOT($maquila_servicios, 'maquila_servicio_id', 'Servicios Maquila' , $errors, $ot ,'form-control',true,true) !!}					
+				</div>
+			</div>
+		</div>
+	</div>
+	<?php /* 
+	<div id="ot-sentido-onda" class="col-4 mb-2">
+		<div class="card h-100">
+			<div class="card-header">Sentido de onda</div>
+			<div class="card-body">
+				<!-- Tipo Sentido de Onda -->
+				{!! armarSelectArrayCreateEditOT(["Vertical" => "Vertical", "Horizontal"=>"Horizontal"], 'tipo_sentido_onda', 'Tipo Sentido de Onda' , $errors, $ot ,'form-control',true,false) !!}
+			</div>
+		</div>
+	</div>
+	 */ ?>
+	<!-- <div id="ot-sentido-onda" class="col-4 mb-2"> -->
+		<!-- <div class="card h-100">
+			<div class="card-header">Impresión</div>
+			<div class="card-body">
+			</div>
+		</div> -->
+	<!-- </div>  -->
+	<div id="ot-material" class="col-12 mb-2" >
+		<div class="card h-100">
+			<div class="card-header">Material Asignado</div>
+			<div class="card-body">
+
+				<div class="form-group form-row ">
+					<div class="col-4">
+						<!-- Material Asignado -->
+						{!! inputReadOnly('Material Asignado', isset($ot->material) ? $ot->material->codigo : null, 'material_asignado') !!}
+					</div>
+					<div class="col-8">
+						<!-- Descripción -->
+						{!! inputReadOnly('Descripción', isset($ot->material) ? $ot->material->descripcion : null, 'descripcion_material') !!}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<div id="ot-desarrollo" class="col-4 mb-2" >
+		<div class="card h-100">
+			<div class="card-header">Datos para desarrollo</div>
+			<div class="card-body">
+
+				<!-- Peso que contiene la caja (Kg) -->
+				{!! armarInputCreateEditOT('peso_contenido_caja', 'Peso que contiene la caja (Kg):', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+				<!-- Autosoportante -->
+				{!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'autosoportante', 'Autosoportante' , $errors, $ot ,'form-control',true,false) !!}
+
+				<!-- Envase Primario -->
+				{!! armarSelectArrayCreateEditOT($envases, 'envase_id', 'Envase Primario' , $errors, $ot ,'form-control',true,true) !!}
+				<!-- 							CAMBIAR DATOS -->
+				<div class="form-row">
+					<div class="col-12">
+
+						<!-- Cuantas cajas apilan en altura -->
+						{!! armarInputCreateEditOT('cajas_altura', 'Altura Cajas Apiladas:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+					</div>
+					<div class="col-8">
+
+						<!-- Pallet Sobre pallet -->
+						{!! armarSelectArrayCreateEditOT([1 => "Si", 0=>"No"], 'pallet_sobre_pallet', 'Pallet Sobre pallet' , $errors, $ot ,'form-control',true,false) !!}
+
+					</div>
+					<div class="col-4">
+						<!-- Cantidad -->
+						{!! armarInputCreateEditOT('cantidad', 'Cantidad:', 'number',$errors, $ot, 'form-control', 'min="0"', '') !!}
+
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="ot-sentido-onda" class="col-8 mb-2" >
+		<div class="card h-100">
+			<div class="card-header">Observación del trabajo a realizar</div>
+			<div class="card-body">
+				<div class="form-group form-row">
+					<div class="col">
+						<textarea class="{{$errors->has('observacion') ? 'error' : ''}}" style="resize: none;border-color:#3aaa35" name="observacion" id="observacion" cols="121" rows="10">@if(old('observacion')) {{old('observacion')}} @elseif(isset($ot->observacion) && !old('_token') && $tipo=='edit') {{ $ot->observacion}} @endif </textarea>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<input type="hidden" id="role_id" name="role_id" value="{{auth()->user()->role_id}}">
+<input type="hidden" id="detalle_id" name="detalle_id" value="">
+<input type="hidden" id="muestra_id" name="muestra_id" value="">
+<input type="hidden" id="validacion_campos" name="validacion_campos" value="{{$validacion_campos}}">
+<input type="hidden" id="prueba_required" name="prueba_required" value="">
