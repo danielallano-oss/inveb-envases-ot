@@ -29,8 +29,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code from msw-envases-ot
 COPY msw-envases-ot/src/ ./src/
-COPY msw-envases-ot/alembic/ ./alembic/
-COPY msw-envases-ot/alembic.ini .
 
 # Expose port
 EXPOSE 8000
