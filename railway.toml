@@ -1,5 +1,5 @@
 # ==============================================
-# INVEB Laravel Backend - Railway Configuration
+# INVEB FastAPI Backend - Railway Configuration
 # ==============================================
 
 [build]
@@ -7,7 +7,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-healthcheckPath = "/"
-healthcheckTimeout = 300
+healthcheckPath = "/health"
+healthcheckTimeout = 100
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

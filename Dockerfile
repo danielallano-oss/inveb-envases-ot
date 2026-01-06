@@ -1,43 +1,43 @@
-FROM php:7.4-apache
+# INVEB Envases OT - Microservice Dockerfile for Railway
+# Stack: Python 3.12 + FastAPI + SQLModel
+
+FROM python:3.12-slim
+
+# Metadata
+LABEL maintainer="Tecnoandina"
+LABEL description="INVEB Envases OT Microservice"
+LABEL version="1.0.0"
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src
+
+WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
     curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    libfreetype6-dev \
-    libjpeg62-turbo-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl
+    && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Copy requirements first (Docker layer caching)
+# Note: Copying from msw-envases-ot subdirectory
+COPY msw-envases-ot/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Composer
-COPY --from=composer:2.2 /usr/bin/composer /usr/bin/composer
+# Copy source code from msw-envases-ot
+COPY msw-envases-ot/src/ ./src/
+COPY msw-envases-ot/alembic/ ./alembic/
+COPY msw-envases-ot/alembic.ini .
 
-# Set working directory
-WORKDIR /var/www/html
+# Expose port
+EXPOSE 8000
 
-# Copy existing application directory
-COPY . .
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
-
-# Configure Apache DocumentRoot
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
-
-# Expose port 80
-EXPOSE 80
-
-CMD ["apache2-foreground"]
+# Run with uvicorn
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
