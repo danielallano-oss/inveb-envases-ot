@@ -37,14 +37,13 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
 
 def get_db_connection():
-    """Conexion a MySQL."""
-    import os
+    """Conexion a MySQL usando configuracion de settings."""
     return pymysql.connect(
-        host=os.getenv("MYSQL_HOST", "host.docker.internal"),
-        port=int(os.getenv("MYSQL_PORT", "3307")),
-        user=os.getenv("MYSQL_USER", "root"),
-        password=os.getenv("MYSQL_PASSWORD", "root"),
-        database=os.getenv("MYSQL_DATABASE", "envases_ot"),
+        host=settings.LARAVEL_MYSQL_HOST,
+        port=settings.LARAVEL_MYSQL_PORT,
+        user=settings.LARAVEL_MYSQL_USER,
+        password=settings.LARAVEL_MYSQL_PASSWORD,
+        database=settings.LARAVEL_MYSQL_DATABASE,
         cursorclass=pymysql.cursors.DictCursor,
         charset='utf8mb4'
     )

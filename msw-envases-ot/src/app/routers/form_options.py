@@ -96,9 +96,8 @@ IMPRESION_TYPES = [
 ]
 
 # FSC - De migration 2021_09_15_105008_create_table_fsc.php
+# Issue 21: Quitadas opciones SI/NO (codigos 0 y 1) segun requerimiento
 FSC_OPTIONS = [
-    SelectOption(value=0, label="No", description="Sin certificacion FSC"),
-    SelectOption(value=1, label="Si", description="Con certificacion FSC"),
     SelectOption(value=2, label="Sin FSC", description="Producto sin FSC"),
     SelectOption(value=3, label="Logo FSC solo EEII", description="Logo solo en especificacion"),
     SelectOption(value=4, label="Logo FSC cliente y EEII", description="Logo en producto y especificacion"),

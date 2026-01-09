@@ -2204,9 +2204,12 @@ class FormOptionsComplete(BaseModel):
     styles: List[dict]
     colors: List[dict]
     envases: List[dict]
+    matrices: List[dict]  # Matrices para Sección 7
     # Catálogos de procesos
     processes: List[dict]
     armados: List[dict]
+    pegados: List[dict]
+    sentidos_armado: List[dict]
     impresiones: List[dict]
     fsc: List[dict]
     # Catálogos de materiales
@@ -2224,6 +2227,8 @@ class FormOptionsComplete(BaseModel):
     tipo_cinta: List[dict]
     pallet_types: List[dict]
     salas_corte: List[dict]
+    pallet_qas: List[dict]  # Certificado de Calidad
+    pallet_tag_formats: List[dict]  # Formato Etiqueta Pallet
     # Jerarquías
     hierarchies: List[dict]
     subhierarchies: List[dict]
@@ -2236,6 +2241,7 @@ class FormOptionsComplete(BaseModel):
     # Configuración
     secuencia_operacional: List[dict]
     # Sección 13 - Datos para Desarrollo
+    product_type_developing: List[dict]
     food_types: List[dict]
     expected_uses: List[dict]
     recycled_uses: List[dict]
@@ -2345,6 +2351,16 @@ async def _get_form_options_complete_impl() -> FormOptionsComplete:
             """)
             options['envases'] = cursor.fetchall()
 
+            # Matrices (para Sección 7)
+            cursor.execute("""
+                SELECT id, plano_cad as nombre, tipo_matriz
+                FROM matrices
+                WHERE active = 1
+                ORDER BY id DESC
+                LIMIT 500
+            """)
+            options['matrices'] = cursor.fetchall()
+
             # ========== CATÁLOGOS DE PROCESOS ==========
 
             # Procesos (no tiene columna codigo)
@@ -2364,6 +2380,24 @@ async def _get_form_options_complete_impl() -> FormOptionsComplete:
                 ORDER BY descripcion
             """)
             options['armados'] = cursor.fetchall()
+
+            # Pegados (Tipo de pegado)
+            cursor.execute("""
+                SELECT id, descripcion as nombre
+                FROM pegados
+                WHERE active = 1
+                ORDER BY id
+            """)
+            options['pegados'] = cursor.fetchall()
+
+            # Sentidos de armado (hardcoded como en Laravel)
+            options['sentidos_armado'] = [
+                {"id": 1, "nombre": "No aplica"},
+                {"id": 2, "nombre": "Ancho a la Derecha"},
+                {"id": 3, "nombre": "Ancho a la Izquierda"},
+                {"id": 4, "nombre": "Largo a la Izquierda"},
+                {"id": 5, "nombre": "Largo a la Derecha"},
+            ]
 
             # Impresiones (tabla impresion - usa status)
             cursor.execute("""
@@ -2425,10 +2459,11 @@ async def _get_form_options_complete_impl() -> FormOptionsComplete:
             # ========== CATÁLOGOS DE REFERENCIA ==========
 
             # Tipos de referencia (usa codigo como value, como Laravel)
+            # Issue 16: Quitadas opciones SI/NO (codigos 0 y 1) segun requerimiento
             cursor.execute("""
                 SELECT codigo as id, descripcion as nombre
                 FROM reference_types
-                WHERE active = 1
+                WHERE active = 1 AND codigo NOT IN (0, 1)
                 ORDER BY codigo
             """)
             options['reference_types'] = cursor.fetchall()
@@ -2487,6 +2522,24 @@ async def _get_form_options_complete_impl() -> FormOptionsComplete:
 
             # Salas de corte (tabla no existe)
             options['salas_corte'] = []
+
+            # Certificado de Calidad (pallet_qas)
+            cursor.execute("""
+                SELECT id, descripcion as nombre
+                FROM pallet_qas
+                WHERE active = 1
+                ORDER BY descripcion
+            """)
+            options['pallet_qas'] = cursor.fetchall()
+
+            # Formato Etiqueta Pallet (pallet_tag_formats)
+            cursor.execute("""
+                SELECT id, descripcion as nombre
+                FROM pallet_tag_formats
+                WHERE active = 1
+                ORDER BY descripcion
+            """)
+            options['pallet_tag_formats'] = cursor.fetchall()
 
             # ========== JERARQUÍAS ==========
 
@@ -2561,6 +2614,15 @@ async def _get_form_options_complete_impl() -> FormOptionsComplete:
             options['secuencia_operacional'] = cursor.fetchall()
 
             # ========== SECCIÓN 13 - DATOS PARA DESARROLLO ==========
+
+            # Tipo de producto para desarrollo
+            cursor.execute("""
+                SELECT id, descripcion as nombre
+                FROM product_type_developing
+                WHERE deleted = 0
+                ORDER BY id
+            """)
+            options['product_type_developing'] = cursor.fetchall()
 
             # Tipos de alimento
             cursor.execute("""
@@ -2711,6 +2773,98 @@ async def duplicate_work_order(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al duplicar OT: {str(e)}"
+        )
+    finally:
+        connection.close()
+
+
+# =============================================================================
+# ENDPOINT CAD - Issue 26 y 45-46: Cargar datos de CAD seleccionado
+# =============================================================================
+
+class CADDetailsResponse(BaseModel):
+    """Respuesta con detalles de un CAD para cargar en el formulario."""
+    id: int
+    cad: str
+    # Medidas interiores
+    interno_largo: int
+    interno_ancho: int
+    interno_alto: int
+    # Medidas exteriores
+    externo_largo: int
+    externo_ancho: int
+    externo_alto: int
+    # Otros datos del CAD
+    area_producto: float
+    largura_hm: int
+    anchura_hm: int
+    largura_hc: int
+    anchura_hc: int
+    area_hm: int
+    area_hc_unitario: int
+    rayado_c1r1: float
+    rayado_r1_r2: float
+    rayado_r2_c2: float
+    recorte_caracteristico: float
+    recorte_adicional: float
+    veces_item: int
+
+
+@router.get("/cad/{cad_id}", response_model=CADDetailsResponse)
+async def get_cad_details(cad_id: int):
+    """
+    Obtiene los detalles de un CAD específico.
+    Issue 26: Cargar datos al seleccionar CAD.
+    Issues 45-46: Cargar medidas interiores y exteriores.
+    """
+    connection = get_laravel_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, cad, interno_largo, interno_ancho, interno_alto,
+                       externo_largo, externo_ancho, externo_alto,
+                       area_producto, largura_hm, anchura_hm, largura_hc, anchura_hc,
+                       area_hm, area_hc_unitario, rayado_c1r1, rayado_r1_r2, rayado_r2_c2,
+                       recorte_caracteristico, recorte_adicional, veces_item
+                FROM cads
+                WHERE id = %s AND active = 1
+            """, (cad_id,))
+            cad = cursor.fetchone()
+
+            if not cad:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"CAD con id {cad_id} no encontrado"
+                )
+
+            return CADDetailsResponse(
+                id=cad['id'],
+                cad=cad['cad'],
+                interno_largo=cad['interno_largo'] or 0,
+                interno_ancho=cad['interno_ancho'] or 0,
+                interno_alto=cad['interno_alto'] or 0,
+                externo_largo=cad['externo_largo'] or 0,
+                externo_ancho=cad['externo_ancho'] or 0,
+                externo_alto=cad['externo_alto'] or 0,
+                area_producto=float(cad['area_producto'] or 0),
+                largura_hm=cad['largura_hm'] or 0,
+                anchura_hm=cad['anchura_hm'] or 0,
+                largura_hc=cad['largura_hc'] or 0,
+                anchura_hc=cad['anchura_hc'] or 0,
+                area_hm=cad['area_hm'] or 0,
+                area_hc_unitario=cad['area_hc_unitario'] or 0,
+                rayado_c1r1=float(cad['rayado_c1r1'] or 0),
+                rayado_r1_r2=float(cad['rayado_r1_r2'] or 0),
+                rayado_r2_c2=float(cad['rayado_r2_c2'] or 0),
+                recorte_caracteristico=float(cad['recorte_caracteristico'] or 0),
+                recorte_adicional=float(cad['recorte_adicional'] or 0),
+                veces_item=cad['veces_item'] or 0
+            )
+
+    except pymysql.Error as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener CAD: {str(e)}"
         )
     finally:
         connection.close()

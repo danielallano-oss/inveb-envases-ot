@@ -114,10 +114,11 @@ async def get_instalaciones_cliente(
     conn = get_db_connection()
     try:
         with conn.cursor() as cursor:
+            # Issue 4: La tabla usa 'deleted' (0=activo) en lugar de 'active'
             cursor.execute("""
                 SELECT id, COALESCE(nombre, CONCAT('Instalación #', id)) as nombre, direccion_contacto as direccion
                 FROM installations
-                WHERE client_id = %s AND active = 1
+                WHERE client_id = %s AND (deleted = 0 OR deleted IS NULL)
                 ORDER BY nombre
             """, (client_id,))
             rows = cursor.fetchall()
@@ -154,11 +155,11 @@ async def get_instalaciones_cliente_cotiza(
             """, (client_id,))
             client = cursor.fetchone()
 
-            # Obtener instalaciones
+            # Obtener instalaciones - Issue 4: usa 'deleted' en lugar de 'active'
             cursor.execute("""
                 SELECT id, COALESCE(nombre, CONCAT('Instalación #', id)) as nombre, direccion_contacto as direccion
                 FROM installations
-                WHERE client_id = %s AND active = 1
+                WHERE client_id = %s AND (deleted = 0 OR deleted IS NULL)
                 ORDER BY nombre
             """, (client_id,))
             instalaciones = cursor.fetchall()

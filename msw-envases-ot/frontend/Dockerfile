@@ -6,11 +6,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Build argument for API URL (Railway will inject this)
-ARG VITE_API_URL=http://localhost:8001/api/v1
-
-# Set as environment variable for Vite build
-ENV VITE_API_URL=$VITE_API_URL
+# Set API URL for production build
+ENV VITE_API_URL=https://inveb-api-production.up.railway.app/api/v1
+ENV VITE_API_ROOT_URL=https://inveb-api-production.up.railway.app
+ENV VITE_ENV=production
 
 # Copy package files
 COPY package*.json ./

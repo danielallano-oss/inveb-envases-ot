@@ -62,6 +62,7 @@ interface MuestraModalProps {
   cartones?: Array<{ id: string | number; nombre?: string; codigo?: string }>;
   cartonesMuestra?: Array<{ id: string | number; nombre?: string; codigo?: string }>;
   comunas?: Array<{ id: string | number; nombre?: string }>;
+  roleId?: number; // Issue 12: Para hacer campos readonly para vendedor
 }
 
 const INITIAL_FORM_DATA: MuestraFormData = {
@@ -280,6 +281,9 @@ const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
   }
 `;
 
+// Roles de vendedor (Issue 12)
+const VENDEDOR_ROLES = [4, 17]; // Vendedor y Vendedor Externo
+
 export function MuestraModal({
   isOpen,
   onClose,
@@ -291,12 +295,18 @@ export function MuestraModal({
   cartones = [],
   cartonesMuestra = [],
   comunas = [],
+  roleId,
 }: MuestraModalProps) {
   const [formData, setFormData] = useState<MuestraFormData>({
     ...INITIAL_FORM_DATA,
     cad_id: cadId || null,
     carton_id: cartonId || null,
   });
+
+  // Issue 12: Determinar si el usuario es vendedor (campos readonly)
+  const esVendedor = useMemo(() => {
+    return roleId ? VENDEDOR_ROLES.includes(roleId) : false;
+  }, [roleId]);
 
   // Determinar si el CAD debe estar deshabilitado (para tipo_solicitud 1, 4, 7)
   const cadDisabled = useMemo(() => {
@@ -370,7 +380,8 @@ export function MuestraModal({
               <Select
                 value={formData.cad_id || ''}
                 onChange={(e) => handleInputChange('cad_id', e.target.value ? Number(e.target.value) : null)}
-                disabled={cadDisabled}
+                disabled={cadDisabled || esVendedor}
+                style={esVendedor ? { backgroundColor: '#f5f5f5' } : undefined}
               >
                 <option value="">Seleccionar...</option>
                 {cads.map(cad => (
@@ -384,6 +395,8 @@ export function MuestraModal({
               <Select
                 value={formData.carton_id || ''}
                 onChange={(e) => handleInputChange('carton_id', e.target.value ? Number(e.target.value) : null)}
+                disabled={esVendedor}
+                style={esVendedor ? { backgroundColor: '#f5f5f5' } : undefined}
               >
                 <option value="">Seleccionar...</option>
                 {cartones.map(carton => (
@@ -399,6 +412,8 @@ export function MuestraModal({
               <Select
                 value={formData.pegado_id || ''}
                 onChange={(e) => handleInputChange('pegado_id', e.target.value ? Number(e.target.value) : null)}
+                disabled={esVendedor}
+                style={esVendedor ? { backgroundColor: '#f5f5f5' } : undefined}
               >
                 <option value="">Seleccionar...</option>
                 {PEGADO_OPTIONS.map(opt => (
@@ -422,6 +437,8 @@ export function MuestraModal({
               <Select
                 value={formData.carton_muestra_id || ''}
                 onChange={(e) => handleInputChange('carton_muestra_id', e.target.value ? Number(e.target.value) : null)}
+                disabled={esVendedor}
+                style={esVendedor ? { backgroundColor: '#f5f5f5' } : undefined}
               >
                 <option value="">Seleccionar...</option>
                 {cartonesMuestra.map(carton => (
@@ -562,7 +579,8 @@ export function MuestraModal({
             <DestinoTitle>Envío Cliente VB</DestinoTitle>
 
             {/* Destinatario 1 */}
-            <FormGrid $columns={5} style={{ marginBottom: '1rem' }}>
+            {/* Issue 14: Comuna no se muestra para vendedor (esVendedor) */}
+            <FormGrid $columns={esVendedor ? 4 : 5} style={{ marginBottom: '1rem' }}>
               <FormGroup>
                 <Label>Destinatario 1</Label>
                 <Input
@@ -571,18 +589,20 @@ export function MuestraModal({
                   onChange={(e) => handleInputChange('destinatario_1', e.target.value)}
                 />
               </FormGroup>
-              <FormGroup>
-                <Label>Comuna</Label>
-                <Select
-                  value={formData.comuna_1 || ''}
-                  onChange={(e) => handleInputChange('comuna_1', e.target.value ? Number(e.target.value) : null)}
-                >
-                  <option value="">Seleccionar...</option>
-                  {comunas.map(comuna => (
-                    <option key={String(comuna.id)} value={comuna.id}>{comuna.nombre || comuna.id}</option>
-                  ))}
-                </Select>
-              </FormGroup>
+              {!esVendedor && (
+                <FormGroup>
+                  <Label>Comuna</Label>
+                  <Select
+                    value={formData.comuna_1 || ''}
+                    onChange={(e) => handleInputChange('comuna_1', e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {comunas.map(comuna => (
+                      <option key={String(comuna.id)} value={comuna.id}>{comuna.nombre || comuna.id}</option>
+                    ))}
+                  </Select>
+                </FormGroup>
+              )}
               <FormGroup>
                 <Label>Dirección</Label>
                 <Input
@@ -615,7 +635,7 @@ export function MuestraModal({
             </FormGrid>
 
             {/* Destinatario 2 */}
-            <FormGrid $columns={5} style={{ marginBottom: '1rem' }}>
+            <FormGrid $columns={esVendedor ? 4 : 5} style={{ marginBottom: '1rem' }}>
               <FormGroup>
                 <Label>Destinatario 2</Label>
                 <Input
@@ -624,18 +644,20 @@ export function MuestraModal({
                   onChange={(e) => handleInputChange('destinatario_2', e.target.value)}
                 />
               </FormGroup>
-              <FormGroup>
-                <Label>Comuna</Label>
-                <Select
-                  value={formData.comuna_2 || ''}
-                  onChange={(e) => handleInputChange('comuna_2', e.target.value ? Number(e.target.value) : null)}
-                >
-                  <option value="">Seleccionar...</option>
-                  {comunas.map(comuna => (
-                    <option key={String(comuna.id)} value={comuna.id}>{comuna.nombre || comuna.id}</option>
-                  ))}
-                </Select>
-              </FormGroup>
+              {!esVendedor && (
+                <FormGroup>
+                  <Label>Comuna</Label>
+                  <Select
+                    value={formData.comuna_2 || ''}
+                    onChange={(e) => handleInputChange('comuna_2', e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {comunas.map(comuna => (
+                      <option key={String(comuna.id)} value={comuna.id}>{comuna.nombre || comuna.id}</option>
+                    ))}
+                  </Select>
+                </FormGroup>
+              )}
               <FormGroup>
                 <Label>Dirección</Label>
                 <Input
@@ -668,7 +690,7 @@ export function MuestraModal({
             </FormGrid>
 
             {/* Destinatario 3 */}
-            <FormGrid $columns={5} style={{ marginBottom: '1rem' }}>
+            <FormGrid $columns={esVendedor ? 4 : 5} style={{ marginBottom: '1rem' }}>
               <FormGroup>
                 <Label>Destinatario 3</Label>
                 <Input
@@ -677,18 +699,20 @@ export function MuestraModal({
                   onChange={(e) => handleInputChange('destinatario_3', e.target.value)}
                 />
               </FormGroup>
-              <FormGroup>
-                <Label>Comuna</Label>
-                <Select
-                  value={formData.comuna_3 || ''}
-                  onChange={(e) => handleInputChange('comuna_3', e.target.value ? Number(e.target.value) : null)}
-                >
-                  <option value="">Seleccionar...</option>
-                  {comunas.map(comuna => (
-                    <option key={String(comuna.id)} value={comuna.id}>{comuna.nombre || comuna.id}</option>
-                  ))}
-                </Select>
-              </FormGroup>
+              {!esVendedor && (
+                <FormGroup>
+                  <Label>Comuna</Label>
+                  <Select
+                    value={formData.comuna_3 || ''}
+                    onChange={(e) => handleInputChange('comuna_3', e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {comunas.map(comuna => (
+                      <option key={String(comuna.id)} value={comuna.id}>{comuna.nombre || comuna.id}</option>
+                    ))}
+                  </Select>
+                </FormGroup>
+              )}
               <FormGroup>
                 <Label>Dirección</Label>
                 <Input
@@ -721,7 +745,7 @@ export function MuestraModal({
             </FormGrid>
 
             {/* Destinatario 4 */}
-            <FormGrid $columns={5}>
+            <FormGrid $columns={esVendedor ? 4 : 5}>
               <FormGroup>
                 <Label>Destinatario 4</Label>
                 <Input
@@ -730,18 +754,20 @@ export function MuestraModal({
                   onChange={(e) => handleInputChange('destinatario_4', e.target.value)}
                 />
               </FormGroup>
-              <FormGroup>
-                <Label>Comuna</Label>
-                <Select
-                  value={formData.comuna_4 || ''}
-                  onChange={(e) => handleInputChange('comuna_4', e.target.value ? Number(e.target.value) : null)}
-                >
-                  <option value="">Seleccionar...</option>
-                  {comunas.map(comuna => (
-                    <option key={String(comuna.id)} value={comuna.id}>{comuna.nombre || comuna.id}</option>
-                  ))}
-                </Select>
-              </FormGroup>
+              {!esVendedor && (
+                <FormGroup>
+                  <Label>Comuna</Label>
+                  <Select
+                    value={formData.comuna_4 || ''}
+                    onChange={(e) => handleInputChange('comuna_4', e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {comunas.map(comuna => (
+                      <option key={String(comuna.id)} value={comuna.id}>{comuna.nombre || comuna.id}</option>
+                    ))}
+                  </Select>
+                </FormGroup>
+              )}
               <FormGroup>
                 <Label>Dirección</Label>
                 <Input

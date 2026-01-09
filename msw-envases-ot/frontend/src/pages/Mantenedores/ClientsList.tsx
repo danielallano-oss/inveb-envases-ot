@@ -3,7 +3,7 @@
  * Mantenedor de Clientes - Lista con CRUD
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../theme';
 import {
@@ -13,9 +13,27 @@ import {
   useUpdateClient,
   useActivateClient,
   useDeactivateClient,
+  useClientDetail,
 } from '../../hooks/useMantenedores';
-import type { ClientFilters, ClientCreate, ClientUpdate, ClientDetail } from '../../services/api';
+import type { ClientFilters, ClientCreate, ClientUpdate } from '../../services/api';
 import ClientForm from './ClientForm';
+
+// Custom debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 // Styled Components
 const Container = styled.div`
@@ -368,33 +386,38 @@ export default function ClientsList({ onNavigate }: ClientsListProps) {
   const [clasificacionFilter, setClasificacionFilter] = useState<number | null>(null);
   const [activoFilter, setActivoFilter] = useState<boolean | undefined>(undefined);
   const [showForm, setShowForm] = useState(false);
-  const [editingClient, setEditingClient] = useState<ClientDetail | null>(null);
+  const [editingClientId, setEditingClientId] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Build filters
-  const filters: ClientFilters = {
+  // Debounce search term for automatic filtering (Issue 1-2: Búsqueda automática)
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Build filters with debounced search
+  const filters: ClientFilters = useMemo(() => ({
     page,
     page_size: 20,
-    search: searchTerm || undefined,
+    search: debouncedSearchTerm || undefined,
     clasificacion_id: clasificacionFilter || undefined,
     activo: activoFilter,
-  };
+  }), [page, debouncedSearchTerm, clasificacionFilter, activoFilter]);
+
+  // Reset page when search term changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearchTerm, clasificacionFilter, activoFilter]);
 
   // Hooks
   const { data, isLoading, error } = useClientsList(filters);
   const { data: clasificaciones } = useClasificaciones();
+  // Issue 3: Obtener datos completos del cliente para edición
+  const { data: editingClient, isLoading: isLoadingClient } = useClientDetail(editingClientId);
   const createMutation = useCreateClient();
   const updateMutation = useUpdateClient();
   const activateMutation = useActivateClient();
   const deactivateMutation = useDeactivateClient();
 
   // Handlers
-  const handleSearch = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-  }, []);
-
   const handleClearFilters = useCallback(() => {
     setSearchTerm('');
     setClasificacionFilter(null);
@@ -403,23 +426,24 @@ export default function ClientsList({ onNavigate }: ClientsListProps) {
   }, []);
 
   const handleCreate = useCallback(() => {
-    setEditingClient(null);
+    setEditingClientId(null);
     setShowForm(true);
   }, []);
 
-  const handleEdit = useCallback((client: ClientDetail) => {
-    setEditingClient(client);
+  // Issue 3: Obtener datos completos del cliente al editar
+  const handleEdit = useCallback((clientId: number) => {
+    setEditingClientId(clientId);
     setShowForm(true);
   }, []);
 
   const handleFormClose = useCallback(() => {
     setShowForm(false);
-    setEditingClient(null);
+    setEditingClientId(null);
   }, []);
 
   const handleFormSubmit = useCallback(async (formData: ClientCreate | ClientUpdate) => {
     try {
-      if (editingClient) {
+      if (editingClientId && editingClient) {
         await updateMutation.mutateAsync({ id: editingClient.id, data: formData as ClientUpdate });
         setSuccessMessage('Cliente actualizado correctamente');
       } else {
@@ -427,7 +451,7 @@ export default function ClientsList({ onNavigate }: ClientsListProps) {
         setSuccessMessage('Cliente creado correctamente');
       }
       setShowForm(false);
-      setEditingClient(null);
+      setEditingClientId(null);
       setErrorMessage(null);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: unknown) {
@@ -435,7 +459,7 @@ export default function ClientsList({ onNavigate }: ClientsListProps) {
       setErrorMessage(error.message || 'Error al guardar cliente');
       setSuccessMessage(null);
     }
-  }, [editingClient, createMutation, updateMutation]);
+  }, [editingClientId, editingClient, createMutation, updateMutation]);
 
   const handleActivate = useCallback(async (id: number) => {
     try {
@@ -505,10 +529,30 @@ export default function ClientsList({ onNavigate }: ClientsListProps) {
 
   // Render form modal
   if (showForm) {
+    // Si estamos editando y aún no se cargan los datos, mostrar loading
+    if (editingClientId && isLoadingClient) {
+      return (
+        <Container>
+          <Header>
+            <Title>Editar Cliente</Title>
+            <HeaderActions>
+              <Button onClick={handleFormClose}>
+                ← Cancelar
+              </Button>
+            </HeaderActions>
+          </Header>
+          <LoadingOverlay>
+            <Spinner />
+            <span>Cargando datos del cliente...</span>
+          </LoadingOverlay>
+        </Container>
+      );
+    }
+
     return (
       <Container>
         <Header>
-          <Title>{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</Title>
+          <Title>{editingClientId ? 'Editar Cliente' : 'Nuevo Cliente'}</Title>
           <HeaderActions>
             <Button onClick={handleFormClose}>
               ← Cancelar
@@ -516,7 +560,7 @@ export default function ClientsList({ onNavigate }: ClientsListProps) {
           </HeaderActions>
         </Header>
         <ClientForm
-          client={editingClient}
+          client={editingClient || null}
           clasificaciones={clasificaciones || []}
           onSubmit={handleFormSubmit}
           onCancel={handleFormClose}
@@ -543,51 +587,46 @@ export default function ClientsList({ onNavigate }: ClientsListProps) {
       {successMessage && <Alert $type="success">{successMessage}</Alert>}
       {errorMessage && <Alert $type="error">{errorMessage}</Alert>}
 
-      {/* Filters */}
+      {/* Filters - Issue 1-2: Búsqueda automática sin botón */}
       <FiltersCard>
-        <form onSubmit={handleSearch}>
-          <FiltersGrid>
-            <FormGroup>
-              <Label>Buscar</Label>
-              <Input
-                type="text"
-                placeholder="RUT, nombre, email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </FormGroup>
-            <FormGroup>
-              <Label>Clasificacion</Label>
-              <Select
-                value={clasificacionFilter || ''}
-                onChange={(e) => setClasificacionFilter(e.target.value ? Number(e.target.value) : null)}
-              >
-                <option value="">Todas</option>
-                {clasificaciones?.map(c => (
-                  <option key={c.id} value={c.id}>{c.descripcion}</option>
-                ))}
-              </Select>
-            </FormGroup>
-            <FormGroup>
-              <Label>Estado</Label>
-              <Select
-                value={activoFilter === undefined ? '' : activoFilter ? 'true' : 'false'}
-                onChange={(e) => setActivoFilter(e.target.value === '' ? undefined : e.target.value === 'true')}
-              >
-                <option value="">Todos</option>
-                <option value="true">Activos</option>
-                <option value="false">Inactivos</option>
-              </Select>
-            </FormGroup>
-            <FormGroup>
-              <Label>&nbsp;</Label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <Button type="submit" $variant="primary">Buscar</Button>
-                <Button type="button" onClick={handleClearFilters}>Limpiar</Button>
-              </div>
-            </FormGroup>
-          </FiltersGrid>
-        </form>
+        <FiltersGrid>
+          <FormGroup>
+            <Label>Buscar (filtra automáticamente)</Label>
+            <Input
+              type="text"
+              placeholder="RUT, nombre, email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label>Clasificacion</Label>
+            <Select
+              value={clasificacionFilter || ''}
+              onChange={(e) => setClasificacionFilter(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">Todas</option>
+              {clasificaciones?.map(c => (
+                <option key={c.id} value={c.id}>{c.descripcion}</option>
+              ))}
+            </Select>
+          </FormGroup>
+          <FormGroup>
+            <Label>Estado</Label>
+            <Select
+              value={activoFilter === undefined ? '' : activoFilter ? 'true' : 'false'}
+              onChange={(e) => setActivoFilter(e.target.value === '' ? undefined : e.target.value === 'true')}
+            >
+              <option value="">Todos</option>
+              <option value="true">Activos</option>
+              <option value="false">Inactivos</option>
+            </Select>
+          </FormGroup>
+          <FormGroup>
+            <Label>&nbsp;</Label>
+            <Button type="button" onClick={handleClearFilters}>Limpiar Filtros</Button>
+          </FormGroup>
+        </FiltersGrid>
       </FiltersCard>
 
       <ResultsInfo>
@@ -643,7 +682,7 @@ export default function ClientsList({ onNavigate }: ClientsListProps) {
                     <Td>
                       <ActionButton
                         $variant="edit"
-                        onClick={() => handleEdit(client as unknown as ClientDetail)}
+                        onClick={() => handleEdit(client.id)}
                         title="Editar"
                       >
                         Editar

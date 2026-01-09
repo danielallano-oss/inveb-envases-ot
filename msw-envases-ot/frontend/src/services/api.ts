@@ -471,6 +471,34 @@ export interface ApprovalActionResponse {
   new_state: string;
 }
 
+// Issue 26, 45-46: Respuesta de detalles de CAD
+export interface CADDetailsResponse {
+  id: number;
+  cad: string;
+  // Medidas interiores
+  interno_largo: number;
+  interno_ancho: number;
+  interno_alto: number;
+  // Medidas exteriores
+  externo_largo: number;
+  externo_ancho: number;
+  externo_alto: number;
+  // Otros datos del CAD
+  area_producto: number;
+  largura_hm: number;
+  anchura_hm: number;
+  largura_hc: number;
+  anchura_hc: number;
+  area_hm: number;
+  area_hc_unitario: number;
+  rayado_c1r1: number;
+  rayado_r1_r2: number;
+  rayado_r2_c2: number;
+  recorte_caracteristico: number;
+  recorte_adicional: number;
+  veces_item: number;
+}
+
 // Work Orders API
 export const workOrdersApi = {
   /**
@@ -983,6 +1011,14 @@ export const cascadeApi = {
    */
   getFormOptions: async (): Promise<FormOptionsResponse> => {
     const response = await api.get<FormOptionsResponse>('/form-options/');
+    return response.data;
+  },
+
+  /**
+   * Issue 26, 45-46: Obtiene detalles de un CAD específico
+   */
+  getCADDetails: async (cadId: number): Promise<CADDetailsResponse> => {
+    const response = await api.get<CADDetailsResponse>(`/work-orders/cad/${cadId}`);
     return response.data;
   },
 };
@@ -3577,6 +3613,10 @@ export interface FormOptionsComplete {
   pegados: CatalogOption[];
   sentidos_armado: CatalogOption[];
   product_type_developing: CatalogOption[];
+  // Sección 7 - Calidad adicionales
+  pallet_qas: CatalogOption[];  // Certificado de Calidad
+  pallet_tag_formats: CatalogOption[];  // Formato Etiqueta Pallet
+  matrices: CatalogOption[];  // Matrices para Sección 7
 }
 
 export interface DuplicateOTResponse {

@@ -6,7 +6,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../theme';
-import type { ClientDetail, ClientCreate, ClientUpdate, ClasificacionOption } from '../../services/api';
+import type { ClientDetail, ClientCreate, ClientUpdate, ClasificacionOption, InstalacionOption } from '../../services/api';
+import { cascadesApi } from '../../services/api';
 
 // Styled Components
 const FormCard = styled.div`
@@ -142,6 +143,46 @@ const HelpText = styled.span`
   margin-top: 0.25rem;
 `;
 
+const SectionTitle = styled.h3`
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: ${theme.colors.textPrimary};
+  margin: 1.5rem 0 0.75rem 0;
+  padding-top: 1rem;
+  border-top: 1px solid ${theme.colors.border};
+`;
+
+const InstallationsList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const InstallationItem = styled.div`
+  padding: 0.75rem;
+  background: ${theme.colors.bgLight};
+  border-radius: 4px;
+  border: 1px solid ${theme.colors.border};
+`;
+
+const InstallationName = styled.div`
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: ${theme.colors.textPrimary};
+`;
+
+const InstallationAddress = styled.div`
+  font-size: 0.75rem;
+  color: ${theme.colors.textSecondary};
+  margin-top: 0.25rem;
+`;
+
+const NoDataText = styled.p`
+  color: ${theme.colors.textSecondary};
+  font-size: 0.875rem;
+  font-style: italic;
+`;
+
 // Types
 interface ClientFormProps {
   client: ClientDetail | null;
@@ -233,6 +274,10 @@ export default function ClientForm({
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  // Issue 4: Estado para instalaciones del cliente
+  const [instalaciones, setInstalaciones] = useState<InstalacionOption[]>([]);
+  const [loadingInstalaciones, setLoadingInstalaciones] = useState(false);
+
   // Update form when client changes
   useEffect(() => {
     if (client) {
@@ -251,6 +296,19 @@ export default function ClientForm({
       });
     }
   }, [client]);
+
+  // Issue 4: Cargar instalaciones cuando el cliente existe (modo edición)
+  useEffect(() => {
+    if (client?.id) {
+      setLoadingInstalaciones(true);
+      cascadesApi.getInstalacionesCliente(client.id)
+        .then(data => setInstalaciones(data))
+        .catch(err => console.error('Error cargando instalaciones:', err))
+        .finally(() => setLoadingInstalaciones(false));
+    } else {
+      setInstalaciones([]);
+    }
+  }, [client?.id]);
 
   // Validate field
   const validateField = useCallback((name: string, value: string): string | undefined => {
@@ -507,6 +565,29 @@ export default function ClientForm({
               </Select>
             </FormGroup>
           </FormGrid>
+
+          {/* Issue 4: Sección de Instalaciones (solo en modo edición) */}
+          {isEditing && (
+            <>
+              <SectionTitle>Instalaciones del Cliente</SectionTitle>
+              {loadingInstalaciones ? (
+                <NoDataText>Cargando instalaciones...</NoDataText>
+              ) : instalaciones.length > 0 ? (
+                <InstallationsList>
+                  {instalaciones.map(inst => (
+                    <InstallationItem key={inst.id}>
+                      <InstallationName>{inst.nombre}</InstallationName>
+                      {inst.direccion && (
+                        <InstallationAddress>{inst.direccion}</InstallationAddress>
+                      )}
+                    </InstallationItem>
+                  ))}
+                </InstallationsList>
+              ) : (
+                <NoDataText>Este cliente no tiene instalaciones registradas.</NoDataText>
+              )}
+            </>
+          )}
 
           <FormActions>
             <Button type="button" onClick={onCancel} disabled={isLoading}>

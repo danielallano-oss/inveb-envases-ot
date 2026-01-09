@@ -11,7 +11,7 @@ import { theme } from '../../theme';
 import { CascadeForm } from '../../components/CascadeForm';
 import { MuestraModal } from '../../components/MuestraModal';
 import SearchableSelect from '../../components/SearchableSelect';
-import { workOrdersApi, cascadesApi, type WorkOrderCreateData, type DatosOTFromCotizacion, type InstalacionOption, type ContactoOption } from '../../services/api';
+import { workOrdersApi, cascadesApi, cascadeApi, uploadsApi, type WorkOrderCreateData, type DatosOTFromCotizacion, type InstalacionOption, type ContactoOption, type OTFileType } from '../../services/api';
 import { useWorkOrderFilterOptions, useFormOptionsComplete } from '../../hooks/useWorkOrders';
 import type { CascadeFormData } from '../../types/cascade';
 
@@ -371,6 +371,14 @@ interface FormState {
   // Archivo Visto Bueno
   ant_des_vb_muestra: boolean;
   ant_des_vb_boceto: boolean;
+  // Issue 8, 11, 18, 19: Campos de archivo para upload
+  file_correo_cliente: File | null;
+  file_plano_actual: File | null;
+  file_boceto_actual: File | null;
+  file_otro: File | null;
+  file_oc: File | null;  // Issue 8: Orden de Compra
+  file_vb_muestra: File | null;  // Issue 18
+  file_vb_boceto: File | null;  // Issue 19
   // Cascade fields (Sección 6)
   cascadeData: CascadeFormData;
   // Seccion 7: Caracteristicas
@@ -510,6 +518,13 @@ interface FormState {
   so_planta_alt2_select_values: string;
   // Matriz de secuencia operacional: secuencia_operacional[fila][columna]
   secuencia_operacional_matrix: (string | null)[][];
+  // Issue 42: Distancia Cinta (visible cuando cinta = 1)
+  distancia_cinta_1: number | null;
+  distancia_cinta_2: number | null;
+  distancia_cinta_3: number | null;
+  distancia_cinta_4: number | null;
+  distancia_cinta_5: number | null;
+  distancia_cinta_6: number | null;
 }
 
 const INITIAL_STATE: FormState = {
@@ -558,6 +573,14 @@ const INITIAL_STATE: FormState = {
   // Archivo Visto Bueno
   ant_des_vb_muestra: false,
   ant_des_vb_boceto: false,
+  // Issue 8, 11, 18, 19: Archivos para upload
+  file_correo_cliente: null,
+  file_plano_actual: null,
+  file_boceto_actual: null,
+  file_otro: null,
+  file_oc: null,
+  file_vb_muestra: null,
+  file_vb_boceto: null,
   cascadeData: {
     productTypeId: null,
     impresion: null,
@@ -700,6 +723,13 @@ const INITIAL_STATE: FormState = {
   so_planta_alt2_select_values: '',
   // Matriz 6x6: filas x columnas (Original, Alt1-5)
   secuencia_operacional_matrix: Array(6).fill(null).map(() => Array(6).fill(null)),
+  // Issue 42: Distancia Cinta
+  distancia_cinta_1: null,
+  distancia_cinta_2: null,
+  distancia_cinta_3: null,
+  distancia_cinta_4: null,
+  distancia_cinta_5: null,
+  distancia_cinta_6: null,
 };
 
 // Tipos de solicitud base (igual que Laravel WorkOrderController@select)
@@ -896,6 +926,32 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
     }
   }, [formState.client_id, formState.instalacion_cliente_id]);
 
+  // Issue 39: Cargar datos de la instalación (incluyendo bulto_zunchado) cuando cambia
+  useEffect(() => {
+    if (formState.instalacion_cliente_id) {
+      cascadesApi.getInformacionInstalacion(formState.instalacion_cliente_id)
+        .then(info => {
+          setFormState(prev => ({
+            ...prev,
+            // Issue 39: Auto-cargar bulto_zunchado desde la instalación
+            bulto_zunchado_pallet: info.bulto_zunchado ?? null,
+            // También cargar otros campos de la instalación si existen
+            formato_etiqueta_pallet: info.formato_etiqueta ? Number(info.formato_etiqueta) : prev.formato_etiqueta_pallet,
+            etiquetas_por_pallet: info.etiquetas_pallet ?? prev.etiquetas_por_pallet,
+          }));
+        })
+        .catch(err => console.error('Error cargando información de instalación:', err));
+    } else {
+      // Limpiar valores cuando se deselecciona la instalación
+      setFormState(prev => ({
+        ...prev,
+        bulto_zunchado_pallet: null,
+        formato_etiqueta_pallet: null,
+        etiquetas_por_pallet: null,
+      }));
+    }
+  }, [formState.instalacion_cliente_id]);
+
   // Rellenar datos de contacto cuando se selecciona un contacto del dropdown
   useEffect(() => {
     if (formState.contactos_cliente_id) {
@@ -937,11 +993,81 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
     }
   }, [initialData]);
 
+  // Issue 50: Sincronizar Planta de Sección 12 con Planta de Sección 6
+  useEffect(() => {
+    if (formState.cascadeData?.plantaId) {
+      setFormState(prev => ({
+        ...prev,
+        so_planta_original: formState.cascadeData.plantaId
+      }));
+    }
+  }, [formState.cascadeData?.plantaId]);
+
+  // Issue 8, 11, 18, 19: Función para subir archivos pendientes
+  const uploadPendingFiles = async (otId: number) => {
+    const fileUploads: { file: File; type: OTFileType }[] = [];
+
+    if (formState.file_correo_cliente) {
+      fileUploads.push({ file: formState.file_correo_cliente, type: 'correo_cliente' });
+    }
+    if (formState.file_plano_actual) {
+      fileUploads.push({ file: formState.file_plano_actual, type: 'plano' });
+    }
+    if (formState.file_boceto_actual) {
+      fileUploads.push({ file: formState.file_boceto_actual, type: 'boceto' });
+    }
+    if (formState.file_otro) {
+      fileUploads.push({ file: formState.file_otro, type: 'otro' });
+    }
+    if (formState.file_oc) {
+      fileUploads.push({ file: formState.file_oc, type: 'oc' });
+    }
+    if (formState.file_vb_muestra) {
+      fileUploads.push({ file: formState.file_vb_muestra, type: 'vb_muestra' });
+    }
+    if (formState.file_vb_boceto) {
+      fileUploads.push({ file: formState.file_vb_boceto, type: 'vb_boceto' });
+    }
+
+    // Subir archivos en paralelo
+    const uploadPromises = fileUploads.map(({ file, type }) =>
+      uploadsApi.uploadOTFile(otId, file, type).catch(err => {
+        console.error(`Error subiendo archivo ${type}:`, err);
+        return null;
+      })
+    );
+
+    await Promise.all(uploadPromises);
+  };
+
   // Mutation para crear OT
   const createMutation = useMutation({
     mutationFn: (data: WorkOrderCreateData) => workOrdersApi.create(data),
-    onSuccess: (response) => {
-      setSuccessMessage(`Orden de trabajo #${response.id} creada exitosamente`);
+    onSuccess: async (response) => {
+      // Issue 8, 11, 18, 19: Subir archivos pendientes
+      const pendingFiles = [
+        formState.file_correo_cliente,
+        formState.file_plano_actual,
+        formState.file_boceto_actual,
+        formState.file_otro,
+        formState.file_oc,
+        formState.file_vb_muestra,
+        formState.file_vb_boceto,
+      ].filter(Boolean);
+
+      if (pendingFiles.length > 0) {
+        setSuccessMessage(`Orden de trabajo #${response.id} creada. Subiendo archivos...`);
+        try {
+          await uploadPendingFiles(response.id);
+          setSuccessMessage(`Orden de trabajo #${response.id} creada exitosamente con ${pendingFiles.length} archivo(s)`);
+        } catch (err) {
+          console.error('Error subiendo archivos:', err);
+          setSuccessMessage(`Orden de trabajo #${response.id} creada, pero algunos archivos no se pudieron subir`);
+        }
+      } else {
+        setSuccessMessage(`Orden de trabajo #${response.id} creada exitosamente`);
+      }
+
       setErrorMessage(null);
       queryClient.invalidateQueries({ queryKey: ['workOrders'] });
       // Redirect after 2 seconds
@@ -958,6 +1084,47 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
   // Handlers
   const handleCascadeChange = useCallback((data: CascadeFormData) => {
     setFormState(prev => ({ ...prev, cascadeData: data }));
+  }, []);
+
+  // Issue 26, 45-46: Handler para cambio de CAD - carga datos automáticamente
+  const handleCADChange = useCallback(async (cadId: number | null) => {
+    // Actualizar el cad_id en el estado
+    setFormState(prev => ({ ...prev, cad_id: cadId }));
+
+    // Si se seleccionó un CAD, cargar sus datos
+    if (cadId) {
+      try {
+        const cadDetails = await cascadeApi.getCADDetails(cadId);
+
+        // Actualizar medidas interiores y exteriores desde el CAD
+        setFormState(prev => ({
+          ...prev,
+          cad_text: cadDetails.cad,
+          // Issue 45: Medidas interiores desde CAD
+          interno_largo: cadDetails.interno_largo || null,
+          interno_ancho: cadDetails.interno_ancho || null,
+          interno_alto: cadDetails.interno_alto || null,
+          // Issue 46: Medidas exteriores desde CAD
+          externo_largo: cadDetails.externo_largo || null,
+          externo_ancho: cadDetails.externo_ancho || null,
+          externo_alto: cadDetails.externo_alto || null,
+        }));
+      } catch (error) {
+        console.error('Error al cargar datos del CAD:', error);
+      }
+    } else {
+      // Limpiar datos si se deselecciona el CAD
+      setFormState(prev => ({
+        ...prev,
+        cad_text: '',
+        interno_largo: null,
+        interno_ancho: null,
+        interno_alto: null,
+        externo_largo: null,
+        externo_ancho: null,
+        externo_alto: null,
+      }));
+    }
   }, []);
 
   // Función de validación de campos
@@ -1233,14 +1400,18 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
       if (!formState.pallet_qa_id) {
         errors.pallet_qa_id = 'Campo obligatorio';
       }
-      if (formState.bulto_zunchado_pallet === null) {
-        errors.bulto_zunchado_pallet = 'Campo obligatorio';
-      }
-      if (!formState.formato_etiqueta_pallet) {
-        errors.formato_etiqueta_pallet = 'Campo obligatorio';
-      }
-      if (!formState.etiquetas_por_pallet) {
-        errors.etiquetas_por_pallet = 'Campo obligatorio';
+      // Campos que dependen de la instalación del cliente
+      // Solo son obligatorios si hay instalación seleccionada
+      if (formState.instalacion_cliente_id) {
+        if (formState.bulto_zunchado_pallet === null) {
+          errors.bulto_zunchado_pallet = 'Campo obligatorio';
+        }
+        if (!formState.formato_etiqueta_pallet) {
+          errors.formato_etiqueta_pallet = 'Campo obligatorio';
+        }
+        if (!formState.etiquetas_por_pallet) {
+          errors.etiquetas_por_pallet = 'Campo obligatorio';
+        }
       }
     }
 
@@ -1272,6 +1443,16 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
       if (!formState.target_market_id) {
         errors.target_market_id = 'Campo obligatorio';
       }
+    }
+
+    // Issue 18: VB Muestra archivo obligatorio si está marcado
+    if (formState.ant_des_vb_muestra && !formState.file_vb_muestra) {
+      errors.file_vb_muestra = 'Debe adjuntar archivo para VB Muestra';
+    }
+
+    // Issue 19: VB Boceto archivo obligatorio si está marcado
+    if (formState.ant_des_vb_boceto && !formState.file_vb_boceto) {
+      errors.file_vb_boceto = 'Debe adjuntar archivo para VB Boceto';
     }
 
     return errors;
@@ -1520,9 +1701,11 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                 <Select
                   value={formState.hierarchy_id || ''}
                   onChange={(e) => handleInputChange('hierarchy_id', e.target.value ? Number(e.target.value) : null)}
-                  disabled={formOptionsLoading}
+                  disabled={true}
+                  style={{ backgroundColor: '#f5f5f5' }}
+                  title="Se sincroniza automáticamente con el Canal seleccionado"
                 >
-                  <option value="">Seleccione...</option>
+                  <option value="">{formState.canal_id ? 'Sincronizado con Canal' : 'Seleccione Canal primero'}</option>
                   {formOptions?.hierarchies.map(h => (
                     <option key={h.id} value={h.id}>{h.nombre}</option>
                   ))}
@@ -1641,16 +1824,36 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                 {fieldErrors.nombre_contacto && <FieldError>{fieldErrors.nombre_contacto}</FieldError>}
               </FormGroup>
 
+              {/* Issue 8: OC con opción de adjuntar archivo */}
               <FormGroup>
                 <Label>OC</Label>
-                <Select
-                  value={formState.oc === null ? '' : formState.oc}
-                  onChange={(e) => handleInputChange('oc', e.target.value === '' ? null : Number(e.target.value))}
-                >
-                  <option value="">Seleccionar...</option>
-                  <option value="1">Si</option>
-                  <option value="0">No</option>
-                </Select>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <Select
+                    style={{ flex: 1 }}
+                    value={formState.oc === null ? '' : formState.oc}
+                    onChange={(e) => handleInputChange('oc', e.target.value === '' ? null : Number(e.target.value))}
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="1">Si</option>
+                    <option value="0">No</option>
+                  </Select>
+                  {formState.oc === 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <label htmlFor="file_oc" style={{ cursor: 'pointer', color: '#28a745' }} title="Adjuntar archivo OC">
+                        <span style={{ fontSize: '1.2rem' }}>📎</span>
+                      </label>
+                      <input
+                        type="file"
+                        id="file_oc"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleInputChange('file_oc', e.target.files?.[0] || null)}
+                      />
+                      {formState.file_oc && (
+                        <span style={{ fontSize: '0.75rem', color: '#28a745', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formState.file_oc.name}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </FormGroup>
 
               <FormGroup />
@@ -1698,34 +1901,92 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
           <FormSection style={{ marginBottom: 0 }}>
             <SectionHeader>3.- Antecedentes Desarrollo</SectionHeader>
             <SectionBody>
-              {/* Documentos */}
+              {/* Issue 11: Documentos con opción de adjuntar archivo */}
               <div style={{ marginBottom: '0.75rem' }}>
                 <Label style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'block' }}>Documentos:</Label>
-                <CheckboxGroup>
-                  <CheckboxLabel>
-                    <input
-                      type="checkbox"
-                      checked={formState.ant_des_correo_cliente}
-                      onChange={(e) => handleInputChange('ant_des_correo_cliente', e.target.checked)}
-                    />
-                    Correo Cliente
-                  </CheckboxLabel>
-                  <CheckboxLabel>
-                    <input
-                      type="checkbox"
-                      checked={formState.ant_des_plano_actual}
-                      onChange={(e) => handleInputChange('ant_des_plano_actual', e.target.checked)}
-                    />
-                    Plano Actual
-                  </CheckboxLabel>
-                  <CheckboxLabel>
-                    <input
-                      type="checkbox"
-                      checked={formState.ant_des_boceto_actual}
-                      onChange={(e) => handleInputChange('ant_des_boceto_actual', e.target.checked)}
-                    />
-                    Boceto Actual
-                  </CheckboxLabel>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {/* Correo Cliente */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <CheckboxLabel style={{ minWidth: '120px' }}>
+                      <input
+                        type="checkbox"
+                        checked={formState.ant_des_correo_cliente}
+                        onChange={(e) => handleInputChange('ant_des_correo_cliente', e.target.checked)}
+                      />
+                      Correo Cliente
+                    </CheckboxLabel>
+                    {formState.ant_des_correo_cliente && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <label htmlFor="file_correo" style={{ cursor: 'pointer', color: '#28a745' }} title="Adjuntar archivo">
+                          <i className="fa fa-paperclip" style={{ fontSize: '1rem' }}>📎</i>
+                        </label>
+                        <input
+                          type="file"
+                          id="file_correo"
+                          style={{ display: 'none' }}
+                          onChange={(e) => handleInputChange('file_correo_cliente', e.target.files?.[0] || null)}
+                        />
+                        {formState.file_correo_cliente && (
+                          <span style={{ fontSize: '0.75rem', color: '#666' }}>{formState.file_correo_cliente.name}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* Plano Actual */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <CheckboxLabel style={{ minWidth: '120px' }}>
+                      <input
+                        type="checkbox"
+                        checked={formState.ant_des_plano_actual}
+                        onChange={(e) => handleInputChange('ant_des_plano_actual', e.target.checked)}
+                      />
+                      Plano Actual
+                    </CheckboxLabel>
+                    {formState.ant_des_plano_actual && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <label htmlFor="file_plano" style={{ cursor: 'pointer', color: '#28a745' }} title="Adjuntar archivo">
+                          <i className="fa fa-paperclip" style={{ fontSize: '1rem' }}>📎</i>
+                        </label>
+                        <input
+                          type="file"
+                          id="file_plano"
+                          style={{ display: 'none' }}
+                          onChange={(e) => handleInputChange('file_plano_actual', e.target.files?.[0] || null)}
+                        />
+                        {formState.file_plano_actual && (
+                          <span style={{ fontSize: '0.75rem', color: '#666' }}>{formState.file_plano_actual.name}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* Boceto Actual */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <CheckboxLabel style={{ minWidth: '120px' }}>
+                      <input
+                        type="checkbox"
+                        checked={formState.ant_des_boceto_actual}
+                        onChange={(e) => handleInputChange('ant_des_boceto_actual', e.target.checked)}
+                      />
+                      Boceto Actual
+                    </CheckboxLabel>
+                    {formState.ant_des_boceto_actual && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <label htmlFor="file_boceto" style={{ cursor: 'pointer', color: '#28a745' }} title="Adjuntar archivo">
+                          <i className="fa fa-paperclip" style={{ fontSize: '1rem' }}>📎</i>
+                        </label>
+                        <input
+                          type="file"
+                          id="file_boceto"
+                          style={{ display: 'none' }}
+                          onChange={(e) => handleInputChange('file_boceto_actual', e.target.files?.[0] || null)}
+                        />
+                        {formState.file_boceto_actual && (
+                          <span style={{ fontSize: '0.75rem', color: '#666' }}>{formState.file_boceto_actual.name}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* Spec */}
                   <CheckboxLabel>
                     <input
                       type="checkbox"
@@ -1734,15 +1995,34 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     />
                     Spec
                   </CheckboxLabel>
-                  <CheckboxLabel>
-                    <input
-                      type="checkbox"
-                      checked={formState.ant_des_otro}
-                      onChange={(e) => handleInputChange('ant_des_otro', e.target.checked)}
-                    />
-                    Otro
-                  </CheckboxLabel>
-                </CheckboxGroup>
+                  {/* Otro */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <CheckboxLabel style={{ minWidth: '120px' }}>
+                      <input
+                        type="checkbox"
+                        checked={formState.ant_des_otro}
+                        onChange={(e) => handleInputChange('ant_des_otro', e.target.checked)}
+                      />
+                      Otro
+                    </CheckboxLabel>
+                    {formState.ant_des_otro && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <label htmlFor="file_otro" style={{ cursor: 'pointer', color: '#28a745' }} title="Adjuntar archivo">
+                          <i className="fa fa-paperclip" style={{ fontSize: '1rem' }}>📎</i>
+                        </label>
+                        <input
+                          type="file"
+                          id="file_otro"
+                          style={{ display: 'none' }}
+                          onChange={(e) => handleInputChange('file_otro', e.target.files?.[0] || null)}
+                        />
+                        {formState.file_otro && (
+                          <span style={{ fontSize: '0.75rem', color: '#666' }}>{formState.file_otro.name}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <hr style={{ margin: '0.75rem 0', borderTop: '1px solid #ddd' }} />
@@ -1853,12 +2133,14 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                       if (isChecked) {
                         // Abrir modal de Crear Muestra al marcar el checkbox
                         setShowMuestraModal(true);
-                      } else {
-                        // Desmarcar y limpiar número de muestras
-                        handleInputChange('muestra', false);
-                        handleInputChange('numero_muestras', null);
                       }
+                      // Issue 15: No se permite desmarcar el checkbox de Muestra una vez marcado
+                      // Se omite el else que permitía desmarcar
                     }}
+                    // Issue 15: Si ya está marcado, se deshabilita para prevenir deselección
+                    disabled={formState.muestra}
+                    style={formState.muestra ? { cursor: 'not-allowed' } : undefined}
+                    title={formState.muestra ? 'No se puede deseleccionar una vez marcado' : undefined}
                   />
                   Muestra
                 </CheckboxLabel>
@@ -1903,17 +2185,17 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
 
                 <FormGroup data-has-error={!!fieldErrors.reference_id}>
                   <Label style={{ color: fieldErrors.reference_id ? '#dc3545' : undefined }}>Referencia</Label>
-                  <Select
-                    $hasError={!!fieldErrors.reference_id}
-                    value={formState.reference_id || ''}
-                    onChange={(e) => handleInputChange('reference_id', e.target.value ? Number(e.target.value) : null)}
+                  {/* Issue 17: SearchableSelect con buscador para lista de materiales */}
+                  <SearchableSelect
+                    options={formOptions?.materials || []}
+                    value={formState.reference_id}
+                    onChange={(val) => handleInputChange('reference_id', val as number | null)}
+                    getOptionValue={(mat) => mat.id}
+                    getOptionLabel={(mat) => `${mat.codigo || mat.nombre}${mat.descripcion ? ` - ${mat.descripcion}` : ''}`}
+                    placeholder="Buscar referencia..."
                     disabled={!formState.reference_type}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {formOptions?.materials?.map((mat) => (
-                      <option key={String(mat.id)} value={mat.id}>{mat.codigo || mat.nombre}{mat.descripcion ? ` - ${mat.descripcion}` : ''}</option>
-                    ))}
-                  </Select>
+                    loading={formOptionsLoading}
+                  />
                   {fieldErrors.reference_id && <FieldError>{fieldErrors.reference_id}</FieldError>}
                 </FormGroup>
 
@@ -1946,27 +2228,69 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                 </FormGroup>
               </FormGrid>
 
-              {/* Archivo Visto Bueno */}
+              {/* Issue 18, 19: Archivo Visto Bueno con upload */}
               <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#f8f9fa', borderRadius: '4px' }}>
                 <Label style={{ fontWeight: 'bold', marginBottom: '0.5rem', display: 'block' }}>Archivo Visto Bueno</Label>
-                <CheckboxGroup>
-                  <CheckboxLabel style={{ color: '#28a745', fontWeight: 'bold' }}>
-                    <input
-                      type="checkbox"
-                      checked={formState.ant_des_vb_muestra}
-                      onChange={(e) => handleInputChange('ant_des_vb_muestra', e.target.checked)}
-                    />
-                    VB Muestra
-                  </CheckboxLabel>
-                  <CheckboxLabel style={{ color: '#28a745', fontWeight: 'bold' }}>
-                    <input
-                      type="checkbox"
-                      checked={formState.ant_des_vb_boceto}
-                      onChange={(e) => handleInputChange('ant_des_vb_boceto', e.target.checked)}
-                    />
-                    VB Boceto
-                  </CheckboxLabel>
-                </CheckboxGroup>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {/* Issue 18: VB Muestra con archivo obligatorio */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <CheckboxLabel style={{ color: '#28a745', fontWeight: 'bold', minWidth: '100px' }}>
+                      <input
+                        type="checkbox"
+                        checked={formState.ant_des_vb_muestra}
+                        onChange={(e) => handleInputChange('ant_des_vb_muestra', e.target.checked)}
+                      />
+                      VB Muestra
+                    </CheckboxLabel>
+                    {formState.ant_des_vb_muestra && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <label htmlFor="file_vb_muestra" style={{ cursor: 'pointer', color: formState.file_vb_muestra ? '#28a745' : '#dc3545' }} title="Adjuntar archivo (obligatorio)">
+                          <span style={{ fontSize: '1rem' }}>📎</span>
+                        </label>
+                        <input
+                          type="file"
+                          id="file_vb_muestra"
+                          style={{ display: 'none' }}
+                          onChange={(e) => handleInputChange('file_vb_muestra', e.target.files?.[0] || null)}
+                        />
+                        {formState.file_vb_muestra ? (
+                          <span style={{ fontSize: '0.75rem', color: '#28a745' }}>{formState.file_vb_muestra.name}</span>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: '#dc3545' }}>* Obligatorio</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* Issue 19: VB Boceto con archivo obligatorio */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <CheckboxLabel style={{ color: '#28a745', fontWeight: 'bold', minWidth: '100px' }}>
+                      <input
+                        type="checkbox"
+                        checked={formState.ant_des_vb_boceto}
+                        onChange={(e) => handleInputChange('ant_des_vb_boceto', e.target.checked)}
+                      />
+                      VB Boceto
+                    </CheckboxLabel>
+                    {formState.ant_des_vb_boceto && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <label htmlFor="file_vb_boceto" style={{ cursor: 'pointer', color: formState.file_vb_boceto ? '#28a745' : '#dc3545' }} title="Adjuntar archivo (obligatorio)">
+                          <span style={{ fontSize: '1rem' }}>📎</span>
+                        </label>
+                        <input
+                          type="file"
+                          id="file_vb_boceto"
+                          style={{ display: 'none' }}
+                          onChange={(e) => handleInputChange('file_vb_boceto', e.target.files?.[0] || null)}
+                        />
+                        {formState.file_vb_boceto ? (
+                          <span style={{ fontSize: '0.75rem', color: '#28a745' }}>{formState.file_vb_boceto.name}</span>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: '#dc3545' }}>* Obligatorio</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </SectionBody>
           </FormSection>
@@ -1993,9 +2317,10 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
               <div>
                 <FormGroup>
                   <Label>CAD</Label>
+                  {/* Issue 26: Al seleccionar CAD, carga datos automáticamente */}
                   <Select
                     value={formState.cad_id || ''}
-                    onChange={(e) => handleInputChange('cad_id', e.target.value ? Number(e.target.value) : null)}
+                    onChange={(e) => handleCADChange(e.target.value ? Number(e.target.value) : null)}
                   >
                     <option value="">Seleccionar...</option>
                     {formOptions?.cads?.map((cad) => (
@@ -2008,8 +2333,12 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                   <Select
                     value={formState.matriz_id || ''}
                     onChange={(e) => handleInputChange('matriz_id', e.target.value ? Number(e.target.value) : null)}
+                    disabled={formOptionsLoading}
                   >
                     <option value="">Seleccionar...</option>
+                    {formOptions?.matrices?.map((m) => (
+                      <option key={m.id} value={m.id}>{m.nombre}</option>
+                    ))}
                   </Select>
                 </FormGroup>
                 <FormGroup>
@@ -2018,6 +2347,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="text"
                     value={formState.tipo_matriz_text}
                     onChange={(e) => handleInputChange('tipo_matriz_text', e.target.value)}
+                    disabled={getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno}
+                    style={(getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno) ? { backgroundColor: '#f5f5f5' } : undefined}
                   />
                 </FormGroup>
                 {/* Campos sincronizados de Seccion 6 */}
@@ -2056,7 +2387,7 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                   <Label>Color Carton</Label>
                   <Input
                     type="text"
-                    value={formState.cascadeData.cartonColor || ''}
+                    value={String(formState.cascadeData.cartonColor) === '1' ? 'Café' : String(formState.cascadeData.cartonColor) === '2' ? 'Blanco' : formState.cascadeData.cartonColor || ''}
                     readOnly
                     style={{ backgroundColor: '#f5f5f5' }}
                   />
@@ -2100,6 +2431,9 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     onChange={(e) => handleInputChange('pallet_qa_id', e.target.value ? Number(e.target.value) : null)}
                   >
                     <option value="">Seleccionar...</option>
+                    {formOptions?.pallet_qas?.map((p) => (
+                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                    ))}
                   </Select>
                   {fieldErrors.pallet_qa_id && <FieldError>{fieldErrors.pallet_qa_id}</FieldError>}
                 </FormGroup>
@@ -2201,6 +2535,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="text"
                     value={formState.caracteristicas_adicionales}
                     onChange={(e) => handleInputChange('caracteristicas_adicionales', e.target.value)}
+                    disabled={getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno}
+                    style={(getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno) ? { backgroundColor: '#f5f5f5' } : undefined}
                   />
                   {fieldErrors.caracteristicas_adicionales && <FieldError>{fieldErrors.caracteristicas_adicionales}</FieldError>}
                 </FormGroup>
@@ -2244,6 +2580,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.longitud_pegado_mm || ''}
                     onChange={(e) => handleInputChange('longitud_pegado_mm', e.target.value ? Number(e.target.value) : null)}
+                    disabled={getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno}
+                    style={(getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno) ? { backgroundColor: '#f5f5f5' } : undefined}
                   />
                 </FormGroup>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -2253,6 +2591,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                       type="number"
                       value={formState.golpes_largo || ''}
                       onChange={(e) => handleInputChange('golpes_largo', e.target.value ? Number(e.target.value) : null)}
+                      disabled={getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno}
+                      style={(getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno) ? { backgroundColor: '#f5f5f5' } : undefined}
                     />
                   </FormGroup>
                   <FormGroup>
@@ -2261,6 +2601,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                       type="number"
                       value={formState.golpes_ancho || ''}
                       onChange={(e) => handleInputChange('golpes_ancho', e.target.value ? Number(e.target.value) : null)}
+                      disabled={getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno}
+                      style={(getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno) ? { backgroundColor: '#f5f5f5' } : undefined}
                     />
                   </FormGroup>
                 </div>
@@ -2288,6 +2630,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.cuchillas_ml || ''}
                     onChange={(e) => handleInputChange('cuchillas_ml', e.target.value ? Number(e.target.value) : null)}
+                    disabled={getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno}
+                    style={(getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno) ? { backgroundColor: '#f5f5f5' } : undefined}
                   />
                 </FormGroup>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -2322,6 +2666,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     $hasError={!!fieldErrors.bulto_zunchado_pallet}
                     value={formState.bulto_zunchado_pallet === null ? '' : formState.bulto_zunchado_pallet}
                     onChange={(e) => handleInputChange('bulto_zunchado_pallet', e.target.value === '' ? null : Number(e.target.value))}
+                    disabled={!formState.instalacion_cliente_id}
+                    style={!formState.instalacion_cliente_id ? { backgroundColor: '#f5f5f5' } : undefined}
                   >
                     <option value="">Seleccionar...</option>
                     <option value="1">Si</option>
@@ -2335,8 +2681,13 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     $hasError={!!fieldErrors.formato_etiqueta_pallet}
                     value={formState.formato_etiqueta_pallet || ''}
                     onChange={(e) => handleInputChange('formato_etiqueta_pallet', e.target.value ? Number(e.target.value) : null)}
+                    disabled={!formState.instalacion_cliente_id}
+                    style={!formState.instalacion_cliente_id ? { backgroundColor: '#f5f5f5' } : undefined}
                   >
                     <option value="">Seleccionar...</option>
+                    {formOptions?.pallet_tag_formats?.map((p) => (
+                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                    ))}
                   </Select>
                   {fieldErrors.formato_etiqueta_pallet && <FieldError>{fieldErrors.formato_etiqueta_pallet}</FieldError>}
                 </FormGroup>
@@ -2347,6 +2698,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.etiquetas_por_pallet || ''}
                     onChange={(e) => handleInputChange('etiquetas_por_pallet', e.target.value ? Number(e.target.value) : null)}
+                    disabled={!formState.instalacion_cliente_id}
+                    style={!formState.instalacion_cliente_id ? { backgroundColor: '#f5f5f5' } : undefined}
                   />
                   {fieldErrors.etiquetas_por_pallet && <FieldError>{fieldErrors.etiquetas_por_pallet}</FieldError>}
                 </FormGroup>
@@ -2373,6 +2726,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                       type="number"
                       value={formState.bct_min_lb || ''}
                       onChange={(e) => handleInputChange('bct_min_lb', e.target.value ? Number(e.target.value) : null)}
+                      disabled={getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno}
+                      style={(getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno) ? { backgroundColor: '#f5f5f5' } : undefined}
                     />
                   </FormGroup>
                   <FormGroup>
@@ -2381,6 +2736,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                       type="number"
                       value={formState.bct_min_kg || ''}
                       onChange={(e) => handleInputChange('bct_min_kg', e.target.value ? Number(e.target.value) : null)}
+                      disabled={getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno}
+                      style={(getCurrentUserRole() === ROLES.Vendedor || getCurrentUserRole() === ROLES.VendedorExterno) ? { backgroundColor: '#f5f5f5' } : undefined}
                     />
                   </FormGroup>
                 </div>
@@ -2397,6 +2754,7 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     <Label>ECT MIN (LB/PULG)</Label>
                     <Input
                       type="number"
+                      step="0.01"
                       value={formState.ect_min_lb_pulg || ''}
                       onChange={(e) => handleInputChange('ect_min_lb_pulg', e.target.value ? Number(e.target.value) : null)}
                     />
@@ -2425,6 +2783,7 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     <Label>FCT (LB/PULG2)</Label>
                     <Input
                       type="number"
+                      step="0.01"
                       value={formState.fct_lb_pulg2 || ''}
                       onChange={(e) => handleInputChange('fct_lb_pulg2', e.target.value ? Number(e.target.value) : null)}
                     />
@@ -2578,6 +2937,71 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
             </div>
           </SectionBody>
         </FormSection>
+
+        {/* Issue 42: Seccion Distancia Cinta - Solo visible cuando Cinta = SI (1) */}
+        {Number(formState.cascadeData.cinta) === 1 && (
+          <FormSection>
+            <SectionHeader>Distancia Cinta</SectionHeader>
+            <SectionBody>
+              <FormGrid>
+                <FormGroup>
+                  <Label>Distancia Corte 1 a Cinta 1 (mm)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formState.distancia_cinta_1 || ''}
+                    onChange={(e) => handleInputChange('distancia_cinta_1', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <Label>Distancia Corte 1 a Cinta 2 (mm)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formState.distancia_cinta_2 || ''}
+                    onChange={(e) => handleInputChange('distancia_cinta_2', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <Label>Distancia Corte 1 a Cinta 3 (mm)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formState.distancia_cinta_3 || ''}
+                    onChange={(e) => handleInputChange('distancia_cinta_3', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <Label>Distancia Corte 1 a Cinta 4 (mm)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formState.distancia_cinta_4 || ''}
+                    onChange={(e) => handleInputChange('distancia_cinta_4', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <Label>Distancia Corte 1 a Cinta 5 (mm)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formState.distancia_cinta_5 || ''}
+                    onChange={(e) => handleInputChange('distancia_cinta_5', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <Label>Distancia Corte 1 a Cinta 6 (mm)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formState.distancia_cinta_6 || ''}
+                    onChange={(e) => handleInputChange('distancia_cinta_6', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </FormGroup>
+              </FormGrid>
+            </SectionBody>
+          </FormSection>
+        )}
 
         {/* Seccion 8: Color-Cera-Barniz */}
         <FormSection>
@@ -2857,8 +3281,19 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                   <Input
                     type="number"
                     min="0"
-                    value={formState.total_cm2_clisse || ''}
-                    onChange={(e) => handleInputChange('total_cm2_clisse', e.target.value ? Number(e.target.value) : null)}
+                    value={
+                      // Issue 44: Cálculo automático de la suma de cm2_clisse_color_1 a 7
+                      (formState.cm2_clisse_color_1 || 0) +
+                      (formState.cm2_clisse_color_2 || 0) +
+                      (formState.cm2_clisse_color_3 || 0) +
+                      (formState.cm2_clisse_color_4 || 0) +
+                      (formState.cm2_clisse_color_5 || 0) +
+                      (formState.cm2_clisse_color_6 || 0) +
+                      (formState.cm2_clisse_color_7 || 0)
+                    }
+                    readOnly
+                    style={{ backgroundColor: '#e9ecef', cursor: 'not-allowed' }}
+                    title="Calculado automáticamente como suma de Clisse cm2 1-7"
                   />
                 </FormGroup>
               </div>
@@ -2868,9 +3303,9 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
 
         {/* Secciones 9, 10 y 11 en fila horizontal como Laravel */}
         <SectionsRow>
-          {/* Seccion 9: Medidas Interiores */}
+          {/* Seccion 9: Medidas Interiores - Issue 45: readonly cuando se carga de CAD */}
           <FormSectionCompact>
-            <SectionHeader>9.- Medidas Interiores</SectionHeader>
+            <SectionHeader>9.- Medidas Interiores {formState.cad_id ? '(desde CAD)' : ''}</SectionHeader>
             <SectionBody>
               <FormGrid $columns={1}>
                 <FormGroup>
@@ -2879,6 +3314,9 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.interno_largo || ''}
                     onChange={(e) => handleInputChange('interno_largo', e.target.value ? Number(e.target.value) : null)}
+                    readOnly={!!formState.cad_id}
+                    style={formState.cad_id ? { backgroundColor: '#e9ecef', cursor: 'not-allowed' } : undefined}
+                    title={formState.cad_id ? 'Cargado desde CAD' : undefined}
                   />
                 </FormGroup>
                 <FormGroup>
@@ -2887,6 +3325,9 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.interno_ancho || ''}
                     onChange={(e) => handleInputChange('interno_ancho', e.target.value ? Number(e.target.value) : null)}
+                    readOnly={!!formState.cad_id}
+                    style={formState.cad_id ? { backgroundColor: '#e9ecef', cursor: 'not-allowed' } : undefined}
+                    title={formState.cad_id ? 'Cargado desde CAD' : undefined}
                   />
                 </FormGroup>
                 <FormGroup>
@@ -2895,15 +3336,18 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.interno_alto || ''}
                     onChange={(e) => handleInputChange('interno_alto', e.target.value ? Number(e.target.value) : null)}
+                    readOnly={!!formState.cad_id}
+                    style={formState.cad_id ? { backgroundColor: '#e9ecef', cursor: 'not-allowed' } : undefined}
+                    title={formState.cad_id ? 'Cargado desde CAD' : undefined}
                   />
                 </FormGroup>
               </FormGrid>
             </SectionBody>
           </FormSectionCompact>
 
-          {/* Seccion 10: Medidas Exteriores */}
+          {/* Seccion 10: Medidas Exteriores - Issue 46: readonly cuando se carga de CAD */}
           <FormSectionCompact>
-            <SectionHeader>10.- Medidas Exteriores</SectionHeader>
+            <SectionHeader>10.- Medidas Exteriores {formState.cad_id ? '(desde CAD)' : ''}</SectionHeader>
             <SectionBody>
               <FormGrid $columns={1}>
                 <FormGroup>
@@ -2912,6 +3356,9 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.externo_largo || ''}
                     onChange={(e) => handleInputChange('externo_largo', e.target.value ? Number(e.target.value) : null)}
+                    readOnly={!!formState.cad_id}
+                    style={formState.cad_id ? { backgroundColor: '#e9ecef', cursor: 'not-allowed' } : undefined}
+                    title={formState.cad_id ? 'Cargado desde CAD' : undefined}
                   />
                 </FormGroup>
                 <FormGroup>
@@ -2920,6 +3367,9 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.externo_ancho || ''}
                     onChange={(e) => handleInputChange('externo_ancho', e.target.value ? Number(e.target.value) : null)}
+                    readOnly={!!formState.cad_id}
+                    style={formState.cad_id ? { backgroundColor: '#e9ecef', cursor: 'not-allowed' } : undefined}
+                    title={formState.cad_id ? 'Cargado desde CAD' : undefined}
                   />
                 </FormGroup>
                 <FormGroup>
@@ -2928,6 +3378,9 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.externo_alto || ''}
                     onChange={(e) => handleInputChange('externo_alto', e.target.value ? Number(e.target.value) : null)}
+                    readOnly={!!formState.cad_id}
+                    style={formState.cad_id ? { backgroundColor: '#e9ecef', cursor: 'not-allowed' } : undefined}
+                    title={formState.cad_id ? 'Cargado desde CAD' : undefined}
                   />
                 </FormGroup>
               </FormGrid>
@@ -3094,7 +3547,7 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
           </SectionBody>
         </FormSection>
 
-        {/* Seccion 13: Material Asignado */}
+        {/* Seccion 13: Material Asignado - Issue 51-52: Campos bloqueados excepto Super Admin */}
         <FormSection>
           <SectionHeader>13.- Material Asignado</SectionHeader>
           <SectionBody>
@@ -3106,6 +3559,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                   value={formState.material_asignado}
                   onChange={(e) => handleInputChange('material_asignado', e.target.value)}
                   placeholder="Código de material..."
+                  disabled={getCurrentUserRole() !== ROLES.SuperAdministrador}
+                  style={getCurrentUserRole() !== ROLES.SuperAdministrador ? { backgroundColor: '#f5f5f5' } : undefined}
                 />
               </FormGroup>
 
@@ -3116,6 +3571,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                   value={formState.descripcion_material}
                   onChange={(e) => handleInputChange('descripcion_material', e.target.value)}
                   placeholder="Descripción del material..."
+                  disabled={getCurrentUserRole() !== ROLES.SuperAdministrador}
+                  style={getCurrentUserRole() !== ROLES.SuperAdministrador ? { backgroundColor: '#f5f5f5' } : undefined}
                 />
               </FormGroup>
             </div>
@@ -3161,7 +3618,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     $hasError={!!fieldErrors.food_type_id}
                     value={formState.food_type_id || ''}
                     onChange={(e) => handleInputChange('food_type_id', e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem' }}
+                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem', backgroundColor: (formState.product_type_developing_id === 1 || (formState.product_type_developing_id !== 3 && formState.product_type_developing_id !== null)) ? '#f5f5f5' : undefined }}
+                    disabled={formState.product_type_developing_id === 1 || (formState.product_type_developing_id !== 3 && formState.product_type_developing_id !== null)}
                   >
                     <option value="">Seleccionar...</option>
                     {formOptions?.food_types?.map(ft => (
@@ -3188,7 +3646,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     $hasError={!!fieldErrors.expected_use_id}
                     value={formState.expected_use_id || ''}
                     onChange={(e) => handleInputChange('expected_use_id', e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem' }}
+                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem', backgroundColor: (formState.product_type_developing_id === 1 || (formState.product_type_developing_id !== 3 && formState.product_type_developing_id !== null)) ? '#f5f5f5' : undefined }}
+                    disabled={formState.product_type_developing_id === 1 || (formState.product_type_developing_id !== 3 && formState.product_type_developing_id !== null)}
                   >
                     <option value="">Seleccionar...</option>
                     {formOptions?.expected_uses?.map(eu => (
@@ -3216,7 +3675,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     $hasError={!!fieldErrors.recycled_use_id}
                     value={formState.recycled_use_id || ''}
                     onChange={(e) => handleInputChange('recycled_use_id', e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem' }}
+                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem', backgroundColor: (formState.product_type_developing_id === 1 || (formState.product_type_developing_id !== 3 && formState.product_type_developing_id !== null)) ? '#f5f5f5' : undefined }}
+                    disabled={formState.product_type_developing_id === 1 || (formState.product_type_developing_id !== 3 && formState.product_type_developing_id !== null)}
                   >
                     <option value="">Seleccionar...</option>
                     {formOptions?.recycled_uses?.map(ru => (
@@ -3240,7 +3700,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     $hasError={!!fieldErrors.class_substance_packed_id}
                     value={formState.class_substance_packed_id || ''}
                     onChange={(e) => handleInputChange('class_substance_packed_id', e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem' }}
+                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem', backgroundColor: (formState.product_type_developing_id === 3 || (formState.product_type_developing_id !== 1 && formState.product_type_developing_id !== null)) ? '#f5f5f5' : undefined }}
+                    disabled={formState.product_type_developing_id === 3 || (formState.product_type_developing_id !== 1 && formState.product_type_developing_id !== null)}
                   >
                     <option value="">Seleccionar...</option>
                     {formOptions?.class_substance_packeds?.map(cs => (
@@ -3267,7 +3728,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     $hasError={!!fieldErrors.transportation_way_id}
                     value={formState.transportation_way_id || ''}
                     onChange={(e) => handleInputChange('transportation_way_id', e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem' }}
+                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem', backgroundColor: (formState.product_type_developing_id === 3 || (formState.product_type_developing_id !== 1 && formState.product_type_developing_id !== null)) ? '#f5f5f5' : undefined }}
+                    disabled={formState.product_type_developing_id === 3 || (formState.product_type_developing_id !== 1 && formState.product_type_developing_id !== null)}
                   >
                     <option value="">Seleccionar...</option>
                     {formOptions?.transportation_ways?.map(tw => (
@@ -3280,7 +3742,8 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
                     type="number"
                     value={formState.cantidad || ''}
                     onChange={(e) => handleInputChange('cantidad', e.target.value ? Number(e.target.value) : null)}
-                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem' }}
+                    style={{ width: '100%', fontSize: '0.7rem', padding: '0.15rem', backgroundColor: formState.pallet_sobre_pallet !== true ? '#f5f5f5' : undefined }}
+                    disabled={formState.pallet_sobre_pallet !== true}
                   />
                 </div>
 
@@ -3362,6 +3825,7 @@ export default function CreateWorkOrder({ onNavigate, initialData }: CreateWorkO
         cartones={formOptions?.cartons || []}
         cartonesMuestra={formOptions?.cartons || []}
         comunas={formOptions?.comunas || []}
+        roleId={getCurrentUserRole()}
       />
     </Container>
   );
